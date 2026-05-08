@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vôlei do Norte Village</title>
+
+<style>
+*{box-sizing:border-box;}
+body{
+  font-family: Arial, sans-serif;
+  background:#0f172a;
+  color:white;
+  padding:20px;
+  margin:0;
+}
+.container{max-width:760px;margin:auto;}
+h1{text-align:center;margin-bottom:10px;}
+.status{
+  background:#1e293b;
+  border-radius:10px;
+  padding:10px;
+  margin:10px 0 15px;
+  font-size:14px;
+  color:#cbd5e1;
+}
+input, button{
+  padding:8px;
+  border-radius:6px;
+  border:none;
+  font-size:14px;
+}
+button{cursor:pointer;font-weight:bold;}
+button:disabled{opacity:.55;cursor:not-allowed;}
+.add-area,.login-area{
+  display:flex;
+  gap:10px;
+  margin-bottom:15px;
+  flex-wrap:wrap;
+}
+.add-area input,.login-area input{flex:1;min-width:150px;}
+.btn-add{background:#22c55e;color:white;}
+.btn-login{background:#38bdf8;color:#082f49;}
+.btn-logout{background:#64748b;color:white;}
+.btn-importar{background:#f59e0b;color:#1f2937;width:100%;margin-bottom:10px;}
+.contador{margin-bottom:10px;font-weight:bold;}
+.jogador-item{
+  display:flex;
+  align-items:center;
+  background:#1e293b;
+  padding:8px;
+  border-radius:8px;
+  margin-bottom:5px;
+  gap:8px;
+}
+.presenca{margin-right:2px;}
+.jogador-nome{flex:1;word-break:break-word;}
+.nota{width:52px;text-align:right;font-variant-numeric:tabular-nums;}
+.btn-editar{background:#f59e0b;color:#1f2937;}
+.btn-excluir{background:#ef4444;color:white;}
+.btn-acao{background:#3b82f6;color:white;width:100%;margin-top:10px;}
+.times{margin-top:20px;}
+.time{background:#1e293b;padding:10px;border-radius:8px;margin-bottom:10px;}
+.aviso{font-size:13px;color:#cbd5e1;margin-top:-6px;margin-bottom:12px;line-height:1.4;}
+.oculto{display:none!important;}
+@media(max-width:600px){
+  body{padding:12px;}
+  .jogador-item{align-items:center;}
+  .btn-editar,.btn-excluir{padding:7px 9px;}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>Vôlei do Norte Village</h1>
+
+<div class="status" id="statusConexao">Conectando ao Firebase...</div>
+
+<div class="login-area" id="areaLogin">
+  <input type="email" id="email" placeholder="E-mail do organizador">
+  <input type="password" id="senha" placeholder="Senha">
+  <button class="btn-login" onclick="loginOrganizador()">Entrar como organizador</button>
+</div>
+
+<div class="login-area oculto" id="areaLogado">
+  <div style="flex:1; align-self:center; color:#bbf7d0; font-weight:bold;">
+    Organizador logado: <span id="emailLogado"></span>
+  </div>
+  <button class="btn-logout" onclick="logoutOrganizador()">Sair</button>
+</div>
+
+<div class="aviso" id="avisoVisitante">
+  Visitantes podem visualizar, selecionar jogadores e sortear times. Para adicionar, excluir ou alterar notas, entre como organizador.
+</div>
+
+<div class="add-area oculto" id="areaAdicionar">
+  <input type="text" id="nome" placeholder="Nome do jogador">
+  <input type="number" id="nota" placeholder="Nota (1-10)" min="1" max="10" step="0.1">
+  <button class="btn-add" onclick="adicionarJogador()">Adicionar</button>
+</div>
+
+<button class="btn-importar oculto" id="btnImportar" onclick="importarLocalStorage()">
+  Importar jogadores salvos neste aparelho para o banco online
+</button>
+
+<div class="contador">
+Jogadores selecionados: <span id="contador">0</span>
+</div>
+
+<div style="display:flex; gap:10px; margin-bottom:10px;">
+  <button onclick="selecionarTodos()" style="flex:1; background:#22c55e; color:white;">
+    Selecionar todos
+  </button>
+  <button onclick="limparSelecao()" style="flex:1; background:#ef4444; color:white;">
+    Limpar seleção
+  </button>
+</div>
+
+<div id="listaJogadores"></div>
+
+<button class="btn-acao" onclick="sortearTimes()">Sortear Times</button>
+
+<div class="times" id="resultado"></div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAZpTp_hwH9FZrU1gRiFwzYS27sjHlokH4",
+  authDomain: "volei-norte-village.firebaseapp.com",
+  projectId: "volei-norte-village",
+  storageBucket: "volei-norte-village.firebasestorage.app",
+  messagingSenderId: "434354295194",
+  appId: "1:434354295194:web:53bb72273e32aab7de2a23"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const jogadoresRef = collection(db, "jogadores");
+
+let jogadores = [];
+let usuarioLogado = null;
+
+const statusConexao = document.getElementById("statusConexao");
+const areaLogin = document.getElementById("areaLogin");
+const areaLogado = document.getElementById("areaLogado");
+const areaAdicionar = document.getElementById("areaAdicionar");
+const avisoVisitante = document.getElementById("avisoVisitante");
+const emailLogado = document.getElementById("emailLogado");
+const btnImportar = document.getElementById("btnImportar");
+
+function atualizarTelaLogin(){
+  const logado = !!usuarioLogado;
+  areaLogin.classList.toggle("oculto", logado);
+  areaLogado.classList.toggle("oculto", !logado);
+  areaAdicionar.classList.toggle("oculto", !logado);
+  avisoVisitante.classList.toggle("oculto", logado);
+  btnImportar.classList.toggle("oculto", !logado);
+  emailLogado.textContent = usuarioLogado?.email || "";
+  renderLista();
+}
+
+onAuthStateChanged(auth, (user)=>{
+  usuarioLogado = user;
+  atualizarTelaLogin();
+});
+
+onSnapshot(query(jogadoresRef, orderBy("nomeLower")), (snapshot)=>{
+  jogadores = snapshot.docs.map(d=>({ id:d.id, ...d.data() }));
+  statusConexao.textContent = "Lista online carregada. Alterações feitas por organizadores aparecem para todos.";
+  renderLista();
+}, (error)=>{
+  console.error(error);
+  statusConexao.textContent = "Erro ao carregar dados. Confira a configuração do Firebase e as regras do Firestore.";
+});
+
+window.loginOrganizador = async function(){
+  const email = document.getElementById("email").value.trim();
+  const senha = document.getElementById("senha").value;
+  if(!email || !senha) return alert("Preencha e-mail e senha.");
+
+  try{
+    await signInWithEmailAndPassword(auth, email, senha);
+    document.getElementById("senha").value = "";
+  }catch(e){
+    alert("Não foi possível entrar. Confira o e-mail e a senha.");
+  }
+}
+
+window.logoutOrganizador = async function(){
+  await signOut(auth);
+}
+
+window.adicionarJogador = async function(){
+  if(!usuarioLogado) return alert("Entre como organizador para adicionar jogadores.");
+
+  const nome = document.getElementById("nome").value.trim();
+  const nota = parseFloat(document.getElementById("nota").value);
+
+  if(!nome || isNaN(nota)) return alert("Preencha nome e nota.");
+  if(nota < 1 || nota > 10) return alert("A nota precisa estar entre 1 e 10.");
+
+  await addDoc(jogadoresRef, {
+    nome,
+    nomeLower: nome.toLowerCase(),
+    nota
+  });
+
+  document.getElementById("nome").value="";
+  document.getElementById("nota").value="";
+}
+
+window.excluir = async function(id){
+  if(!usuarioLogado) return alert("Entre como organizador para excluir jogadores.");
+  if(!confirm("Tem certeza que deseja excluir este jogador?")) return;
+  await deleteDoc(doc(db, "jogadores", id));
+}
+
+window.editarNota = async function(id, nome, notaAtual){
+  if(!usuarioLogado) return alert("Entre como organizador para editar notas.");
+
+  const novaNotaTexto = prompt(`Nova nota para ${nome}:`, Number(notaAtual).toFixed(1));
+  if(novaNotaTexto === null) return;
+
+  const novaNota = parseFloat(novaNotaTexto.replace(",", "."));
+  if(isNaN(novaNota) || novaNota < 1 || novaNota > 10){
+    return alert("Digite uma nota válida entre 1 e 10.");
+  }
+
+  await updateDoc(doc(db, "jogadores", id), { nota: novaNota });
+}
+
+window.importarLocalStorage = async function(){
+  if(!usuarioLogado) return alert("Entre como organizador para importar.");
+
+  const locais = JSON.parse(localStorage.getItem("jogadores") || "[]");
+  if(!locais.length) return alert("Não encontrei jogadores salvos neste aparelho.");
+
+  if(!confirm(`Importar ${locais.length} jogadores deste aparelho para o banco online?`)) return;
+
+  const existentesSnap = await getDocs(jogadoresRef);
+  const nomesExistentes = new Set(existentesSnap.docs.map(d => (d.data().nome || "").toLowerCase().trim()));
+
+  const batch = writeBatch(db);
+  let adicionados = 0;
+
+  locais.forEach(j=>{
+    const nome = String(j.nome || "").trim();
+    const nota = parseFloat(j.nota);
+    if(!nome || isNaN(nota)) return;
+    const chave = nome.toLowerCase();
+    if(nomesExistentes.has(chave)) return;
+
+    const novoDoc = doc(jogadoresRef);
+    batch.set(novoDoc, { nome, nomeLower: chave, nota });
+    nomesExistentes.add(chave);
+    adicionados++;
+  });
+
+  if(adicionados === 0) return alert("Nenhum jogador novo para importar. Talvez eles já estejam no banco online.");
+
+  await batch.commit();
+  alert(`${adicionados} jogadores importados para o banco online.`);
+}
+
+window.renderLista = function(){
+  const lista = document.getElementById("listaJogadores");
+  lista.innerHTML="";
+
+  jogadores.forEach((j,index)=>{
+    const nomeSeguro = String(j.nome).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+    lista.innerHTML += `
+      <div class="jogador-item">
+        <input type="checkbox" class="presenca" onchange="atualizarContador()">
+        <div class="jogador-nome">${j.nome}</div>
+        <div class="nota">${Number(j.nota).toFixed(1)}</div>
+        ${usuarioLogado ? `<button class="btn-editar" onclick="editarNota('${j.id}', '${nomeSeguro}', ${Number(j.nota)})">Editar</button>` : ""}
+        ${usuarioLogado ? `<button class="btn-excluir" onclick="excluir('${j.id}')">X</button>` : ""}
+      </div>
+    `;
+  });
+
+  atualizarContador();
+}
+
+window.atualizarContador = function(){
+  const selecionados = document.querySelectorAll(".presenca:checked").length;
+  document.getElementById("contador").textContent = selecionados;
+}
+
+window.selecionarTodos = function(){
+  document.querySelectorAll(".presenca").forEach(chk=>{ chk.checked = true; });
+  atualizarContador();
+}
+
+window.limparSelecao = function(){
+  document.querySelectorAll(".presenca").forEach(chk=>{ chk.checked = false; });
+  atualizarContador();
+}
+
+function nivel(j){
+  if(j.nota >= 8) return "Elite";
+  if(j.nota >= 7) return "Avancado";
+  if(j.nota >= 6) return "Competitivo";
+  return "Desenvolvimento";
+}
+
+function embaralhar(array){
+  for(let i=array.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [array[i],array[j]]=[array[j],array[i]];
+  }
+  return array;
+}
+
+window.sortearTimes = function(){
+  let selecionados=[];
+
+  document.querySelectorAll(".presenca").forEach((chk,i)=>{
+    if(chk.checked) selecionados.push(jogadores[i]);
+  });
+
+  const total = selecionados.length;
+
+  if(total < 12 || total > 24){
+    return alert("Selecione entre 12 e 24 jogadores.");
+  }
+
+  let timesCompletos = Math.floor(total / 6);
+  if(timesCompletos > 4) timesCompletos = 4;
+
+  let resto = total - (timesCompletos * 6);
+  let numTimes = timesCompletos;
+
+  if(resto > 0 && numTimes < 4){
+    numTimes += 1;
+  }
+
+  let times = Array.from({length:numTimes},()=>[]);
+
+  let grupos={
+    Elite:[],
+    Avancado:[],
+    Competitivo:[],
+    Desenvolvimento:[]
+  };
+
+  selecionados.forEach(j=>grupos[nivel(j)].push(j));
+
+  Object.values(grupos).forEach(grupo=>{ embaralhar(grupo); });
+
+  let eliteIndex = 0;
+  while(grupos.Elite.length > 0){
+    times[eliteIndex % numTimes].push(grupos.Elite.pop());
+    eliteIndex++;
+  }
+
+  const ordemNiveis = ["Avancado", "Competitivo", "Desenvolvimento"];
+
+  for (let nivelAtual of ordemNiveis) {
+    embaralhar(grupos[nivelAtual]);
+
+    for (let jogador of grupos[nivelAtual]) {
+      let timeEscolhido = null;
+      let menorSoma = Infinity;
+
+      for (let t = 0; t < numTimes; t++) {
+        let limite = 6;
+        if (t === numTimes - 1 && resto > 0) limite = resto;
+        if (times[t].length >= limite) continue;
+
+        let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
+
+        if (soma < menorSoma) {
+          menorSoma = soma;
+          timeEscolhido = t;
+        }
+      }
+
+      if (timeEscolhido !== null) times[timeEscolhido].push(jogador);
+    }
+  }
+
+  let resultado=document.getElementById("resultado");
+  resultado.innerHTML="";
+
+  times.forEach((time,i)=>{
+    let soma = time.reduce((acc,j)=>acc+j.nota,0);
+    let media = (soma / time.length).toFixed(2);
+
+    resultado.innerHTML+=`
+      <div class="time">
+        <strong>Time ${i+1} (${time.length} jogadores)</strong><br>
+        Média: ${media}<br><br>
+        ${time.map(j=>`${j.nome} (${Number(j.nota).toFixed(1)})`).join("<br>")}
+      </div>
+    `;
+  });
+}
+</script>
+</body>
+</html>
