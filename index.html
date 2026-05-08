@@ -129,7 +129,7 @@ Jogadores selecionados: <span id="contador">0</span>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, query, orderBy, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAZpTp_hwH9FZrU1gRiFwzYS27sjHlokH4",
@@ -172,13 +172,15 @@ onAuthStateChanged(auth, (user)=>{
   atualizarTelaLogin();
 });
 
-onSnapshot(query(jogadoresRef, orderBy("nomeLower")), (snapshot)=>{
+onSnapshot(jogadoresRef, (snapshot)=>{
   jogadores = snapshot.docs.map(d=>({ id:d.id, ...d.data() }));
+  jogadores.sort((a,b)=>String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR"));
   statusConexao.textContent = "Lista online carregada. Alterações feitas por organizadores aparecem para todos.";
   renderLista();
 }, (error)=>{
   console.error(error);
-  statusConexao.textContent = "Erro ao carregar dados. Confira a configuração do Firebase e as regras do Firestore.";
+  statusConexao.textContent = "Erro ao carregar dados: " + error.message;
+  alert("Erro ao carregar dados do Firebase: " + error.message);
 });
 
 window.loginOrganizador = async function(){
