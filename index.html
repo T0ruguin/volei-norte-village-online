@@ -142,7 +142,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db = getFirestore(app);
+const db = getFirestore(app, "default");
 const jogadoresRef = collection(db, "jogadores");
 
 let jogadores = [];
@@ -209,14 +209,18 @@ window.adicionarJogador = async function(){
   if(!nome || isNaN(nota)) return alert("Preencha nome e nota.");
   if(nota < 1 || nota > 10) return alert("A nota precisa estar entre 1 e 10.");
 
-  await addDoc(jogadoresRef, {
-    nome,
-    nomeLower: nome.toLowerCase(),
-    nota
-  });
-
-  document.getElementById("nome").value="";
-  document.getElementById("nota").value="";
+  try{
+    await addDoc(jogadoresRef, {
+      nome,
+      nomeLower: nome.toLowerCase(),
+      nota
+    });
+    document.getElementById("nome").value="";
+    document.getElementById("nota").value="";
+  }catch(e){
+    console.error(e);
+    alert("Erro ao salvar no Firebase: " + e.message);
+  }
 }
 
 window.excluir = async function(id){
@@ -268,8 +272,13 @@ window.importarLocalStorage = async function(){
 
   if(adicionados === 0) return alert("Nenhum jogador novo para importar. Talvez eles já estejam no banco online.");
 
-  await batch.commit();
-  alert(`${adicionados} jogadores importados para o banco online.`);
+  try{
+    await batch.commit();
+    alert(`${adicionados} jogadores importados para o banco online.`);
+  }catch(e){
+    console.error(e);
+    alert("Erro ao importar para o Firebase: " + e.message);
+  }
 }
 
 window.renderLista = function(){
