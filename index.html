@@ -24,7 +24,7 @@ h1{text-align:center;margin-bottom:10px;}
   font-size:14px;
   color:#cbd5e1;
 }
-input, button{
+input, button, select{
   padding:8px;
   border-radius:6px;
   border:none;
@@ -38,7 +38,8 @@ button:disabled{opacity:.55;cursor:not-allowed;}
   margin-bottom:15px;
   flex-wrap:wrap;
 }
-.add-area input,.login-area input{flex:1;min-width:150px;}
+.add-area input,.login-area input{flex:1;min-width:140px;}
+.add-area select{background:#334155;color:white;min-width:110px;}
 .btn-add{background:#22c55e;color:white;}
 .btn-login{background:#38bdf8;color:#082f49;}
 .btn-logout{background:#64748b;color:white;}
@@ -55,12 +56,20 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 }
 .presenca{margin-right:2px;}
 .jogador-nome{flex:1;word-break:break-word;}
-.nota{width:52px;text-align:right;font-variant-numeric:tabular-nums;}
+.tag-genero{
+  padding:2px 8px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:bold;
+}
+.tag-F{background:#ec4899;color:white;}
+.tag-M{background:#3b82f6;color:white;}
+.nota{width:45px;text-align:right;font-variant-numeric:tabular-nums;}
 .btn-editar{background:#f59e0b;color:#1f2937;}
 .btn-excluir{background:#ef4444;color:white;}
 .btn-acao{background:#3b82f6;color:white;width:100%;margin-top:10px;}
 .times{margin-top:20px;}
-.time{background:#1e293b;padding:10px;border-radius:8px;margin-bottom:10px;}
+.time{background:#1e293b;padding:12px;border-radius:8px;margin-bottom:10px;}
 .aviso{font-size:13px;color:#cbd5e1;margin-top:-6px;margin-bottom:12px;line-height:1.4;}
 .oculto{display:none!important;}
 @media(max-width:600px){
@@ -97,6 +106,10 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 
 <div class="add-area oculto" id="areaAdicionar">
   <input type="text" id="nome" placeholder="Nome do jogador">
+  <select id="genero">
+    <option value="M">Masculino</option>
+    <option value="F">Feminino</option>
+  </select>
   <input type="number" id="nota" placeholder="Nota (1-10)" min="1" max="10" step="0.1">
   <button class="btn-add" onclick="adicionarJogador()">Adicionar</button>
 </div>
@@ -173,7 +186,7 @@ onAuthStateChanged(auth, (user)=>{
 });
 
 onSnapshot(jogadoresRef, (snapshot)=>{
-  jogadores = snapshot.docs.map(d=>({ id:d.id, ...d.data() }));
+  jogadores = snapshot.docs.map(d=>({ id:d.id, genero:"M", ...d.data() }));
   jogadores.sort((a,b)=>String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR"));
   statusConexao.textContent = "Lista online carregada. Alterações feitas por organizadores aparecem para todos.";
   renderLista();
@@ -204,6 +217,7 @@ window.adicionarJogador = async function(){
   if(!usuarioLogado) return alert("Entre como organizador para adicionar jogadores.");
 
   const nome = document.getElementById("nome").value.trim();
+  const genero = document.getElementById("genero").value;
   const nota = parseFloat(document.getElementById("nota").value);
 
   if(!nome || isNaN(nota)) return alert("Preencha nome e nota.");
@@ -213,6 +227,7 @@ window.adicionarJogador = async function(){
     await addDoc(jogadoresRef, {
       nome,
       nomeLower: nome.toLowerCase(),
+      genero,
       nota
     });
     document.getElementById("nome").value="";
@@ -229,10 +244,12 @@ window.excluir = async function(id){
   await deleteDoc(doc(db, "jogadores", id));
 }
 
-window.editarNota = async function(id, nome, notaAtual){
-  if(!usuarioLogado) return alert("Entre como organizador para editar notas.");
+window.editarNota = async function(id, nome, notaAtual, generoAtual){
+  if(!usuarioLogado) return alert("Entre como organizador para editar.");
 
-  const novaNotaTexto = prompt(`Nova nota para ${nome}:`, Number(notaAtual).toFixed(1));
+  const novoGenero = confirm(`Alterar gênero de ${nome}?\nOK = Feminino (F)\nCancelar = Masculino (M)`) ? "F" : "M";
+
+  const novaNotaTexto = prompt(`Nova nota para ${nome} (${novoGenero}):`, Number(notaAtual).toFixed(1));
   if(novaNotaTexto === null) return;
 
   const novaNota = parseFloat(novaNotaTexto.replace(",", "."));
@@ -240,7 +257,7 @@ window.editarNota = async function(id, nome, notaAtual){
     return alert("Digite uma nota válida entre 1 e 10.");
   }
 
-  await updateDoc(doc(db, "jogadores", id), { nota: novaNota });
+  await updateDoc(doc(db, "jogadores", id), { nota: novaNota, genero: novoGenero });
 }
 
 window.importarLocalStorage = async function(){
@@ -260,17 +277,18 @@ window.importarLocalStorage = async function(){
   locais.forEach(j=>{
     const nome = String(j.nome || "").trim();
     const nota = parseFloat(j.nota);
+    const genero = j.genero || "M";
     if(!nome || isNaN(nota)) return;
     const chave = nome.toLowerCase();
     if(nomesExistentes.has(chave)) return;
 
     const novoDoc = doc(jogadoresRef);
-    batch.set(novoDoc, { nome, nomeLower: chave, nota });
+    batch.set(novoDoc, { nome, nomeLower: chave, nota, genero });
     nomesExistentes.add(chave);
     adicionados++;
   });
 
-  if(adicionados === 0) return alert("Nenhum jogador novo para importar. Talvez eles já estejam no banco online.");
+  if(adicionados === 0) return alert("Nenhum jogador novo para importar.");
 
   try{
     await batch.commit();
@@ -285,14 +303,16 @@ window.renderLista = function(){
   const lista = document.getElementById("listaJogadores");
   lista.innerHTML="";
 
-  jogadores.forEach((j,index)=>{
+  jogadores.forEach((j)=>{
     const nomeSeguro = String(j.nome).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
+    const gen = j.genero === "F" ? "F" : "M";
     lista.innerHTML += `
       <div class="jogador-item">
-        <input type="checkbox" class="presenca" onchange="atualizarContador()">
+        <input type="checkbox" class="presenca" data-id="${j.id}" onchange="atualizarContador()">
+        <span class="tag-genero tag-${gen}">${gen}</span>
         <div class="jogador-nome">${j.nome}</div>
         <div class="nota">${Number(j.nota).toFixed(1)}</div>
-        ${usuarioLogado ? `<button class="btn-editar" onclick="editarNota('${j.id}', '${nomeSeguro}', ${Number(j.nota)})">Editar</button>` : ""}
+        ${usuarioLogado ? `<button class="btn-editar" onclick="editarNota('${j.id}', '${nomeSeguro}', ${Number(j.nota)}, '${gen}')">Editar</button>` : ""}
         ${usuarioLogado ? `<button class="btn-excluir" onclick="excluir('${j.id}')">X</button>` : ""}
       </div>
     `;
@@ -316,13 +336,6 @@ window.limparSelecao = function(){
   atualizarContador();
 }
 
-function nivel(j){
-  if(j.nota >= 8) return "Elite";
-  if(j.nota >= 7) return "Avancado";
-  if(j.nota >= 6) return "Competitivo";
-  return "Desenvolvimento";
-}
-
 function embaralhar(array){
   for(let i=array.length-1;i>0;i--){
     const j=Math.floor(Math.random()*(i+1));
@@ -332,10 +345,12 @@ function embaralhar(array){
 }
 
 window.sortearTimes = function(){
-  let selecionados=[];
+  let selecionados = [];
 
-  document.querySelectorAll(".presenca").forEach((chk,i)=>{
-    if(chk.checked) selecionados.push(jogadores[i]);
+  document.querySelectorAll(".presenca:checked").forEach((chk)=>{
+    const id = chk.getAttribute("data-id");
+    const jog = jogadores.find(j => j.id === id);
+    if(jog) selecionados.push(jog);
   });
 
   const total = selecionados.length;
@@ -349,68 +364,92 @@ window.sortearTimes = function(){
 
   let resto = total - (timesCompletos * 6);
   let numTimes = timesCompletos;
-
   if(resto > 0 && numTimes < 4){
     numTimes += 1;
   }
 
-  let times = Array.from({length:numTimes},()=>[]);
+  // Prepara os times
+  let times = Array.from({length: numTimes}, () => []);
 
-  let grupos={
-    Elite:[],
-    Avancado:[],
-    Competitivo:[],
-    Desenvolvimento:[]
-  };
+  // Separa por gênero
+  let mulheres = selecionados.filter(j => j.genero === "F");
+  let homens = selecionados.filter(j => j.genero !== "F");
 
-  selecionados.forEach(j=>grupos[nivel(j)].push(j));
+  // Ordena por nota com leve aleatoriedade para desempate
+  embaralhar(mulheres);
+  mulheres.sort((a,b) => b.nota - a.nota);
 
-  Object.values(grupos).forEach(grupo=>{ embaralhar(grupo); });
+  embaralhar(homens);
+  homens.sort((a,b) => b.nota - a.nota);
 
-  let eliteIndex = 0;
-  while(grupos.Elite.length > 0){
-    times[eliteIndex % numTimes].push(grupos.Elite.pop());
-    eliteIndex++;
-  }
+  // Capacidade de cada time
+  const capacidades = times.map((_, i) => {
+    if (i === numTimes - 1 && resto > 0) return resto;
+    return 6;
+  });
 
-  const ordemNiveis = ["Avancado", "Competitivo", "Desenvolvimento"];
+  // 1. Distribui as mulheres equilibrando a quantidade por time e o nível
+  for (let m of mulheres) {
+    let melhorTime = null;
+    let menorQtdMulheres = Infinity;
+    let menorSomaNota = Infinity;
 
-  for (let nivelAtual of ordemNiveis) {
-    embaralhar(grupos[nivelAtual]);
+    for (let t = 0; t < numTimes; t++) {
+      if (times[t].length >= capacidades[t]) continue;
 
-    for (let jogador of grupos[nivelAtual]) {
-      let timeEscolhido = null;
-      let menorSoma = Infinity;
+      let qtdM = times[t].filter(j => j.genero === "F").length;
+      let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
 
-      for (let t = 0; t < numTimes; t++) {
-        let limite = 6;
-        if (t === numTimes - 1 && resto > 0) limite = resto;
-        if (times[t].length >= limite) continue;
-
-        let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
-
-        if (soma < menorSoma) {
-          menorSoma = soma;
-          timeEscolhido = t;
-        }
+      // Critério principal: quem tem menos mulheres. Desempate: menor soma de notas
+      if (qtdM < menorQtdMulheres || (qtdM === menorQtdMulheres && soma < menorSomaNota)) {
+        menorQtdMulheres = qtdM;
+        menorSomaNota = soma;
+        melhorTime = t;
       }
+    }
 
-      if (timeEscolhido !== null) times[timeEscolhido].push(jogador);
+    if (melhorTime !== null) {
+      times[melhorTime].push(m);
     }
   }
 
-  let resultado=document.getElementById("resultado");
-  resultado.innerHTML="";
+  // 2. Preenche com os homens, equilibrando a nota total
+  for (let h of homens) {
+    let melhorTime = null;
+    let menorSomaNota = Infinity;
 
-  times.forEach((time,i)=>{
-    let soma = time.reduce((acc,j)=>acc+j.nota,0);
-    let media = (soma / time.length).toFixed(2);
+    for (let t = 0; t < numTimes; t++) {
+      if (times[t].length >= capacidades[t]) continue;
 
-    resultado.innerHTML+=`
+      let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
+      if (soma < menorSomaNota) {
+        menorSomaNota = soma;
+        melhorTime = t;
+      }
+    }
+
+    if (melhorTime !== null) {
+      times[melhorTime].push(h);
+    }
+  }
+
+  // Renderiza o resultado
+  let resultado = document.getElementById("resultado");
+  resultado.innerHTML = "";
+
+  times.forEach((time, i) => {
+    let soma = time.reduce((acc, j) => acc + j.nota, 0);
+    let media = time.length ? (soma / time.length).toFixed(2) : "0.00";
+    let qtdM = time.filter(j => j.genero === "F").length;
+    let qtdH = time.length - qtdM;
+
+    resultado.innerHTML += `
       <div class="time">
-        <strong>Time ${i+1} (${time.length} jogadores)</strong><br>
+        <strong>Time ${i+1} (${time.length} jogadores)</strong> — <span>${qtdH}M / ${qtdM}F</span><br>
         Média: ${media}<br><br>
-        ${time.map(j=>`${j.nome} (${Number(j.nota).toFixed(1)})`).join("<br>")}
+        ${time.map(j => `
+          ${j.genero === "F" ? "👧" : "👦"} ${j.nome} (${Number(j.nota).toFixed(1)})
+        `).join("<br>")}
       </div>
     `;
   });
