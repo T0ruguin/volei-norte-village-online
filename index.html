@@ -366,9 +366,9 @@ window.sortearTimes = function(){
     return alert("Selecione no mínimo 12 jogadores para formar ao menos 2 times de 6.");
   }
 
-  // Define apenas times completos de 6
+  // Apenas times fechados em 6
   let numTimes = Math.floor(total / 6);
-  if(numTimes > 4) numTimes = 4; // limite máximo de 4 quadras/times
+  if(numTimes > 4) numTimes = 4;
 
   const vagasTotais = numTimes * 6;
   const numSobras = total - vagasTotais;
@@ -377,12 +377,9 @@ window.sortearTimes = function(){
   let espera = [];
 
   if(numSobras > 0){
-    // Separa a sobra de forma equilibrada (sem pegar só os melhores nem só os piores)
     embaralhar(selecionados);
-    // Ordena por nota mantendo o shuffle anterior como desempate
     selecionados.sort((a,b) => b.nota - a.nota);
 
-    // Seleciona espaçadamente os jogadores que vão para a espera
     let copia = [...selecionados];
     for(let s = 0; s < numSobras; s++){
       let indice = Math.floor((s + 0.5) * (copia.length / numSobras));
@@ -393,28 +390,28 @@ window.sortearTimes = function(){
     titulares = [...selecionados];
   }
 
-  // Prepara os times titulares
   let times = Array.from({length: numTimes}, () => []);
 
   // Separa titulares por gênero
   let mulheres = titulares.filter(j => j.genero === "F");
   let homens = titulares.filter(j => j.genero !== "F");
 
+  // Embaralha para que pessoas de notas iguais ou próximas alternem posições
   embaralhar(mulheres);
-  mulheres.sort((a,b) => b.nota - a.nota);
+  mulheres.sort((a,b) => (b.nota - a.nota) + (Math.random() * 0.5 - 0.25));
 
   embaralhar(homens);
-  homens.sort((a,b) => b.nota - a.nota);
+  homens.sort((a,b) => (b.nota - a.nota) + (Math.random() * 0.5 - 0.25));
 
-  // 1. Distribui as mulheres equilibrando a quantidade por time e o nível
+  // 1. Distribui as mulheres com aleatoriedade no desempate
   for (let m of mulheres) {
+    let ordemTimes = embaralhar(Array.from({length: numTimes}, (_, i) => i));
     let melhorTime = null;
     let menorQtdMulheres = Infinity;
     let menorSomaNota = Infinity;
 
-    for (let t = 0; t < numTimes; t++) {
+    for (let t of ordemTimes) {
       if (times[t].length >= 6) continue;
-
       let qtdM = times[t].filter(j => j.genero === "F").length;
       let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
 
@@ -428,15 +425,16 @@ window.sortearTimes = function(){
     if (melhorTime !== null) times[melhorTime].push(m);
   }
 
-  // 2. Preenche com os homens até completar 6 por time equalizando a soma das notas
+  // 2. Preenche com os homens com aleatoriedade no desempate
   for (let h of homens) {
+    let ordemTimes = embaralhar(Array.from({length: numTimes}, (_, i) => i));
     let melhorTime = null;
     let menorSomaNota = Infinity;
 
-    for (let t = 0; t < numTimes; t++) {
+    for (let t of ordemTimes) {
       if (times[t].length >= 6) continue;
-
       let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
+
       if (soma < menorSomaNota) {
         menorSomaNota = soma;
         melhorTime = t;
@@ -445,6 +443,9 @@ window.sortearTimes = function(){
 
     if (melhorTime !== null) times[melhorTime].push(h);
   }
+
+  // Sorteia a ordem de exibição dos times (evita que qualquer atleta fique preso no Time 1)
+  embaralhar(times);
 
   // Renderiza os resultados
   let resultado = document.getElementById("resultado");
@@ -467,7 +468,6 @@ window.sortearTimes = function(){
     `;
   });
 
-  // Se houver jogadores na espera, renderiza o quadro destacado
   if(espera.length > 0){
     resultado.innerHTML += `
       <div class="time-espera">
