@@ -70,6 +70,13 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 .btn-acao{background:#3b82f6;color:white;width:100%;margin-top:10px;}
 .times{margin-top:20px;}
 .time{background:#1e293b;padding:12px;border-radius:8px;margin-bottom:10px;}
+.time-espera{
+  background:#334155;
+  border:2px dashed #f59e0b;
+  padding:12px;
+  border-radius:8px;
+  margin-top:15px;
+}
 .aviso{font-size:13px;color:#cbd5e1;margin-top:-6px;margin-bottom:12px;line-height:1.4;}
 .oculto{display:none!important;}
 @media(max-width:600px){
@@ -355,38 +362,49 @@ window.sortearTimes = function(){
 
   const total = selecionados.length;
 
-  if(total < 12 || total > 24){
-    return alert("Selecione entre 12 e 24 jogadores.");
+  if(total < 12){
+    return alert("Selecione no mínimo 12 jogadores para formar ao menos 2 times de 6.");
   }
 
-  let timesCompletos = Math.floor(total / 6);
-  if(timesCompletos > 4) timesCompletos = 4;
+  // Define apenas times completos de 6
+  let numTimes = Math.floor(total / 6);
+  if(numTimes > 4) numTimes = 4; // limite máximo de 4 quadras/times
 
-  let resto = total - (timesCompletos * 6);
-  let numTimes = timesCompletos;
-  if(resto > 0 && numTimes < 4){
-    numTimes += 1;
+  const vagasTotais = numTimes * 6;
+  const numSobras = total - vagasTotais;
+
+  let titulares = [];
+  let espera = [];
+
+  if(numSobras > 0){
+    // Separa a sobra de forma equilibrada (sem pegar só os melhores nem só os piores)
+    embaralhar(selecionados);
+    // Ordena por nota mantendo o shuffle anterior como desempate
+    selecionados.sort((a,b) => b.nota - a.nota);
+
+    // Seleciona espaçadamente os jogadores que vão para a espera
+    let copia = [...selecionados];
+    for(let s = 0; s < numSobras; s++){
+      let indice = Math.floor((s + 0.5) * (copia.length / numSobras));
+      espera.push(copia.splice(indice, 1)[0]);
+    }
+    titulares = copia;
+  } else {
+    titulares = [...selecionados];
   }
 
-  // Prepara os times
+  // Prepara os times titulares
   let times = Array.from({length: numTimes}, () => []);
 
-  // Separa por gênero
-  let mulheres = selecionados.filter(j => j.genero === "F");
-  let homens = selecionados.filter(j => j.genero !== "F");
+  // Separa titulares por gênero
+  let mulheres = titulares.filter(j => j.genero === "F");
+  let homens = titulares.filter(j => j.genero !== "F");
 
-  // Ordena por nota com leve aleatoriedade para desempate
   embaralhar(mulheres);
   mulheres.sort((a,b) => b.nota - a.nota);
 
   embaralhar(homens);
   homens.sort((a,b) => b.nota - a.nota);
-
-  // Capacidade de cada time
-  const capacidades = times.map((_, i) => {
-    if (i === numTimes - 1 && resto > 0) return resto;
-    return 6;
-  });
 
   // 1. Distribui as mulheres equilibrando a quantidade por time e o nível
   for (let m of mulheres) {
@@ -395,12 +413,11 @@ window.sortearTimes = function(){
     let menorSomaNota = Infinity;
 
     for (let t = 0; t < numTimes; t++) {
-      if (times[t].length >= capacidades[t]) continue;
+      if (times[t].length >= 6) continue;
 
       let qtdM = times[t].filter(j => j.genero === "F").length;
       let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
 
-      // Critério principal: quem tem menos mulheres. Desempate: menor soma de notas
       if (qtdM < menorQtdMulheres || (qtdM === menorQtdMulheres && soma < menorSomaNota)) {
         menorQtdMulheres = qtdM;
         menorSomaNota = soma;
@@ -408,18 +425,16 @@ window.sortearTimes = function(){
       }
     }
 
-    if (melhorTime !== null) {
-      times[melhorTime].push(m);
-    }
+    if (melhorTime !== null) times[melhorTime].push(m);
   }
 
-  // 2. Preenche com os homens, equilibrando a nota total
+  // 2. Preenche com os homens até completar 6 por time equalizando a soma das notas
   for (let h of homens) {
     let melhorTime = null;
     let menorSomaNota = Infinity;
 
     for (let t = 0; t < numTimes; t++) {
-      if (times[t].length >= capacidades[t]) continue;
+      if (times[t].length >= 6) continue;
 
       let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
       if (soma < menorSomaNota) {
@@ -428,18 +443,16 @@ window.sortearTimes = function(){
       }
     }
 
-    if (melhorTime !== null) {
-      times[melhorTime].push(h);
-    }
+    if (melhorTime !== null) times[melhorTime].push(h);
   }
 
-  // Renderiza o resultado
+  // Renderiza os resultados
   let resultado = document.getElementById("resultado");
   resultado.innerHTML = "";
 
   times.forEach((time, i) => {
     let soma = time.reduce((acc, j) => acc + j.nota, 0);
-    let media = time.length ? (soma / time.length).toFixed(2) : "0.00";
+    let media = (soma / time.length).toFixed(2);
     let qtdM = time.filter(j => j.genero === "F").length;
     let qtdH = time.length - qtdM;
 
@@ -453,6 +466,19 @@ window.sortearTimes = function(){
       </div>
     `;
   });
+
+  // Se houver jogadores na espera, renderiza o quadro destacado
+  if(espera.length > 0){
+    resultado.innerHTML += `
+      <div class="time-espera">
+        <strong>⏳ Próximos / Espera (${espera.length} ${espera.length === 1 ? "jogador" : "jogadores"})</strong><br>
+        <small style="color:#fde68a;">Entram nas próximas rotações ou completam desistências:</small><br><br>
+        ${espera.map(j => `
+          ${j.genero === "F" ? "👧" : "👦"} ${j.nome} (${Number(j.nota).toFixed(1)})
+        `).join("<br>")}
+      </div>
+    `;
+  }
 }
 </script>
 </body>
