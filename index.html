@@ -71,11 +71,20 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 .times{margin-top:20px;}
 .time{background:#1e293b;padding:12px;border-radius:8px;margin-bottom:10px;}
 .time-espera{
-  background:#334155;
+  background:#1e293b;
   border:2px dashed #f59e0b;
-  padding:12px;
+  padding:14px;
   border-radius:8px;
-  margin-top:15px;
+  margin-top:18px;
+}
+.sugestao-box{
+  background:#0f172a;
+  border-left:4px solid #38bdf8;
+  padding:10px;
+  border-radius:6px;
+  margin-top:10px;
+  font-size:13px;
+  line-height:1.5;
 }
 .aviso{font-size:13px;color:#cbd5e1;margin-top:-6px;margin-bottom:12px;line-height:1.4;}
 .oculto{display:none!important;}
@@ -352,6 +361,54 @@ function embaralhar(array){
   return arr;
 }
 
+// Gera combinações matemáticas (k elementos de um array)
+function obterCombinacoes(array, k) {
+  if (k === 0) return [[]];
+  if (array.length < k) return [];
+  const head = array[0];
+  const tail = array.slice(1);
+  const comHead = obterCombinacoes(tail, k - 1).map(c => [head, ...c]);
+  const semHead = obterCombinacoes(tail, k);
+  return [...comHead, ...semHead];
+}
+
+// Sugere a combinação ideal de jogadores de um time que completa a espera
+function sugerirCompletos(time, espera, mediaAlvo) {
+  const vagas = 6 - espera.length;
+  if (vagas <= 0 || vagas >= time.length) return null;
+
+  const combinacoes = obterCombinacoes(time, vagas);
+  const esperaM = espera.filter(p => p.genero === "F").length;
+
+  let melhorCombo = null;
+  let menorPenalidade = Infinity;
+
+  // Embaralha as combinações para não pegar sempre as mesmas pessoas em caso de empate
+  embaralhar(combinacoes).forEach(combo => {
+    const timeCompleto = [...espera, ...combo];
+    const soma = timeCompleto.reduce((acc, p) => acc + p.nota, 0);
+    const media = soma / 6.0;
+
+    const totalM = timeCompleto.filter(p => p.genero === "F").length;
+    const difGenero = Math.abs(totalM - 3); // tenta aproximar de 3M / 3H
+    const difMedia = Math.abs(media - mediaAlvo);
+
+    const penalidade = (difGenero * 1.5) + difMedia;
+
+    if (penalidade < menorPenalidade) {
+      menorPenalidade = penalidade;
+      melhorCombo = {
+        jogadores: combo,
+        mediaFinal: media.toFixed(2),
+        qtdM: totalM,
+        qtdH: 6 - totalM
+      };
+    }
+  });
+
+  return melhorCombo;
+}
+
 window.sortearTimes = function(){
   let selecionados = [];
 
@@ -377,7 +434,6 @@ window.sortearTimes = function(){
   let espera = [];
 
   if(numSobras > 0){
-    // Seleciona as sobras aleatoriamente em faixas de nível para ser sempre justo e variado
     let ordenados = embaralhar(selecionados);
     ordenados.sort((a,b) => b.nota - a.nota);
 
@@ -401,7 +457,6 @@ window.sortearTimes = function(){
   let mulheres = titulares.filter(j => j.genero === "F");
   let homens = titulares.filter(j => j.genero !== "F");
 
-  // Meta exata de mulheres por time
   const baseM = Math.floor(mulheres.length / numTimes);
   const restoM = mulheres.length % numTimes;
   let metaMulheres = Array(restoM).fill(baseM + 1).concat(Array(numTimes - restoM).fill(baseM));
@@ -409,7 +464,6 @@ window.sortearTimes = function(){
   let melhorDistribuicao = null;
   let menorVariancia = Infinity;
 
-  // Realiza 600 simulações em milissegundos para encontrar a montagem mais equilibrada
   for(let tentativa = 0; tentativa < 600; tentativa++){
     let metasEmbaralhadas = embaralhar(metaMulheres);
     let mEmbaralhadas = embaralhar(mulheres);
@@ -437,12 +491,15 @@ window.sortearTimes = function(){
     if(diferenca < menorVariancia){
       menorVariancia = diferenca;
       melhorDistribuicao = timesCandidatos;
-      if(diferenca <= 0.6) break; // Equilíbrio quase perfeito atingido
+      if(diferenca <= 0.6) break;
     }
   }
 
-  // Embaralha tanto a ordem dos times quanto a lista interna de cada time
   let timesFinais = embaralhar(melhorDistribuicao).map(t => embaralhar(t));
+
+  // Calcula a média geral do campeonato
+  const somaTotalTitulares = titulares.reduce((acc, j) => acc + j.nota, 0);
+  const mediaAlvoGeral = somaTotalTitulares / titulares.length;
 
   // Renderiza os resultados
   let resultado = document.getElementById("resultado");
@@ -465,14 +522,38 @@ window.sortearTimes = function(){
     `;
   });
 
+  // Renderiza a caixa de espera com as sugestões inteligentes de empréstimo
   if(espera.length > 0){
+    const vagasFaltando = 6 - espera.length;
+
+    let htmlSugestoes = "";
+    timesFinais.forEach((time, i) => {
+      const sugestao = sugerirCompletos(time, espera, mediaAlvoGeral);
+      if(sugestao){
+        const nomesSugeridos = sugestao.jogadores.map(j => `<strong>${j.nome}</strong> (${Number(j.nota).toFixed(1)})`).join(", ");
+        htmlSugestoes += `
+          <div class="sugestao-box">
+            🔄 <strong>Se o Time ${i+1} sair de quadra:</strong><br>
+            Completar com: ${nomesSugeridos}<br>
+            <span style="color:#94a3b8;">Formação resultante: <strong>${sugestao.qtdH}M / ${sugestao.qtdM}F</strong> — Nova Média: <strong>${sugestao.mediaFinal}</strong></span>
+          </div>
+        `;
+      }
+    });
+
     resultado.innerHTML += `
       <div class="time-espera">
-        <strong>⏳ Próximos / Espera (${espera.length} ${espera.length === 1 ? "jogador" : "jogadores"})</strong><br>
-        <small style="color:#fde68a;">Entram nas próximas rotações ou completam desistências:</small><br><br>
+        <strong style="color:#f59e0b; font-size:15px;">⏳ Próximos / Espera (${espera.length} ${espera.length === 1 ? "jogador" : "jogadores"})</strong><br>
+        <span style="font-size:12px; color:#cbd5e1;">Aguardando na rotação:</span><br><br>
         ${embaralhar(espera).map(j => `
           ${j.genero === "F" ? "👧" : "👦"} ${j.nome} (${Number(j.nota).toFixed(1)})
         `).join("<br>")}
+
+        <div style="margin-top:14px; border-top:1px solid #475569; padding-top:10px;">
+          <strong style="color:#38bdf8; font-size:13px;">💡 Sugestões de empréstimo para fechar 6 jogadores:</strong>
+          <div style="font-size:12px; color:#94a3b8; margin-bottom:6px;">(Quem perder e sair de quadra cede os jogadores indicados abaixo)</div>
+          ${htmlSugestoes}
+        </div>
       </div>
     `;
   }
