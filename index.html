@@ -344,11 +344,12 @@ window.limparSelecao = function(){
 }
 
 function embaralhar(array){
-  for(let i=array.length-1;i>0;i--){
-    const j=Math.floor(Math.random()*(i+1));
-    [array[i],array[j]]=[array[j],array[i]];
+  let arr = [...array];
+  for(let i = arr.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
   }
-  return array;
+  return arr;
 }
 
 window.sortearTimes = function(){
@@ -366,7 +367,6 @@ window.sortearTimes = function(){
     return alert("Selecione no mínimo 12 jogadores para formar ao menos 2 times de 6.");
   }
 
-  // Apenas times fechados em 6
   let numTimes = Math.floor(total / 6);
   if(numTimes > 4) numTimes = 4;
 
@@ -377,81 +377,78 @@ window.sortearTimes = function(){
   let espera = [];
 
   if(numSobras > 0){
-    embaralhar(selecionados);
-    selecionados.sort((a,b) => b.nota - a.nota);
+    // Seleciona as sobras aleatoriamente em faixas de nível para ser sempre justo e variado
+    let ordenados = embaralhar(selecionados);
+    ordenados.sort((a,b) => b.nota - a.nota);
 
-    let copia = [...selecionados];
+    let step = ordenados.length / numSobras;
+    let indicesEspera = new Set();
     for(let s = 0; s < numSobras; s++){
-      let indice = Math.floor((s + 0.5) * (copia.length / numSobras));
-      espera.push(copia.splice(indice, 1)[0]);
+      let start = Math.floor(s * step);
+      let end = Math.floor((s + 1) * step);
+      let escolhido = start + Math.floor(Math.random() * (end - start));
+      indicesEspera.add(escolhido);
     }
-    titulares = copia;
+
+    ordenados.forEach((j, i) => {
+      if(indicesEspera.has(i)) espera.push(j);
+      else titulares.push(j);
+    });
   } else {
     titulares = [...selecionados];
   }
 
-  let times = Array.from({length: numTimes}, () => []);
-
-  // Separa titulares por gênero
   let mulheres = titulares.filter(j => j.genero === "F");
   let homens = titulares.filter(j => j.genero !== "F");
 
-  // Embaralha para que pessoas de notas iguais ou próximas alternem posições
-  embaralhar(mulheres);
-  mulheres.sort((a,b) => (b.nota - a.nota) + (Math.random() * 0.5 - 0.25));
+  // Meta exata de mulheres por time
+  const baseM = Math.floor(mulheres.length / numTimes);
+  const restoM = mulheres.length % numTimes;
+  let metaMulheres = Array(restoM).fill(baseM + 1).concat(Array(numTimes - restoM).fill(baseM));
 
-  embaralhar(homens);
-  homens.sort((a,b) => (b.nota - a.nota) + (Math.random() * 0.5 - 0.25));
+  let melhorDistribuicao = null;
+  let menorVariancia = Infinity;
 
-  // 1. Distribui as mulheres com aleatoriedade no desempate
-  for (let m of mulheres) {
-    let ordemTimes = embaralhar(Array.from({length: numTimes}, (_, i) => i));
-    let melhorTime = null;
-    let menorQtdMulheres = Infinity;
-    let menorSomaNota = Infinity;
+  // Realiza 600 simulações em milissegundos para encontrar a montagem mais equilibrada
+  for(let tentativa = 0; tentativa < 600; tentativa++){
+    let metasEmbaralhadas = embaralhar(metaMulheres);
+    let mEmbaralhadas = embaralhar(mulheres);
+    let hEmbaralhados = embaralhar(homens);
 
-    for (let t of ordemTimes) {
-      if (times[t].length >= 6) continue;
-      let qtdM = times[t].filter(j => j.genero === "F").length;
-      let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
+    let timesCandidatos = Array.from({length: numTimes}, () => []);
 
-      if (qtdM < menorQtdMulheres || (qtdM === menorQtdMulheres && soma < menorSomaNota)) {
-        menorQtdMulheres = qtdM;
-        menorSomaNota = soma;
-        melhorTime = t;
-      }
+    let mIdx = 0;
+    for(let t = 0; t < numTimes; t++){
+      let qtd = metasEmbaralhadas[t];
+      timesCandidatos[t].push(...mEmbaralhadas.slice(mIdx, mIdx + qtd));
+      mIdx += qtd;
     }
 
-    if (melhorTime !== null) times[melhorTime].push(m);
-  }
-
-  // 2. Preenche com os homens com aleatoriedade no desempate
-  for (let h of homens) {
-    let ordemTimes = embaralhar(Array.from({length: numTimes}, (_, i) => i));
-    let melhorTime = null;
-    let menorSomaNota = Infinity;
-
-    for (let t of ordemTimes) {
-      if (times[t].length >= 6) continue;
-      let soma = times[t].reduce((acc, j) => acc + j.nota, 0);
-
-      if (soma < menorSomaNota) {
-        menorSomaNota = soma;
-        melhorTime = t;
-      }
+    let hIdx = 0;
+    for(let t = 0; t < numTimes; t++){
+      let vagasRestantes = 6 - timesCandidatos[t].length;
+      timesCandidatos[t].push(...hEmbaralhados.slice(hIdx, hIdx + vagasRestantes));
+      hIdx += vagasRestantes;
     }
 
-    if (melhorTime !== null) times[melhorTime].push(h);
+    let somas = timesCandidatos.map(t => t.reduce((acc, j) => acc + j.nota, 0));
+    let diferenca = Math.max(...somas) - Math.min(...somas);
+
+    if(diferenca < menorVariancia){
+      menorVariancia = diferenca;
+      melhorDistribuicao = timesCandidatos;
+      if(diferenca <= 0.6) break; // Equilíbrio quase perfeito atingido
+    }
   }
 
-  // Sorteia a ordem de exibição dos times (evita que qualquer atleta fique preso no Time 1)
-  embaralhar(times);
+  // Embaralha tanto a ordem dos times quanto a lista interna de cada time
+  let timesFinais = embaralhar(melhorDistribuicao).map(t => embaralhar(t));
 
   // Renderiza os resultados
   let resultado = document.getElementById("resultado");
   resultado.innerHTML = "";
 
-  times.forEach((time, i) => {
+  timesFinais.forEach((time, i) => {
     let soma = time.reduce((acc, j) => acc + j.nota, 0);
     let media = (soma / time.length).toFixed(2);
     let qtdM = time.filter(j => j.genero === "F").length;
@@ -473,7 +470,7 @@ window.sortearTimes = function(){
       <div class="time-espera">
         <strong>⏳ Próximos / Espera (${espera.length} ${espera.length === 1 ? "jogador" : "jogadores"})</strong><br>
         <small style="color:#fde68a;">Entram nas próximas rotações ou completam desistências:</small><br><br>
-        ${espera.map(j => `
+        ${embaralhar(espera).map(j => `
           ${j.genero === "F" ? "👧" : "👦"} ${j.nome} (${Number(j.nota).toFixed(1)})
         `).join("<br>")}
       </div>
