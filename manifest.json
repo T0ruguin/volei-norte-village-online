@@ -1,0 +1,17 @@
+{
+  "name": "Vôlei do Norte Village",
+  "short_name": "Vôlei Village",
+  "start_url": "/volei-norte-village-online/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
