@@ -57,11 +57,12 @@ h1{text-align:center;margin:6px 0 12px;font-size:24px;}
   font-size:14px;
   color:#cbd5e1;
 }
-input, button, select{
+input, button, select, textarea{
   padding:8px;
   border-radius:6px;
   border:none;
   font-size:14px;
+  font-family: inherit;
 }
 button{cursor:pointer;font-weight:bold;}
 button:disabled{opacity:.55;cursor:not-allowed;}
@@ -77,6 +78,41 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 .btn-login{background:#38bdf8;color:#082f49;}
 .btn-logout{background:#64748b;color:white;}
 .btn-importar{background:#f59e0b;color:#1f2937;width:100%;margin-bottom:10px;}
+
+/* Caixa de Colar Enquete WhatsApp */
+.whats-import-box{
+  background:#1e293b;
+  border:1px solid #334155;
+  border-radius:10px;
+  padding:12px;
+  margin-bottom:14px;
+}
+.whats-import-box textarea{
+  width:100%;
+  background:#0f172a;
+  color:white;
+  border:1px solid #475569;
+  resize:vertical;
+  margin:8px 0;
+  font-size:13px;
+}
+.nao-encontrado-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+  background:#0f172a;
+  padding:6px 8px;
+  border-radius:6px;
+  margin-top:6px;
+  font-size:13px;
+}
+.nao-encontrado-item select{
+  background:#334155;
+  color:white;
+  max-width:190px;
+}
+
 .contador{margin-bottom:10px;font-weight:bold;}
 .jogador-item{
   display:flex;
@@ -142,16 +178,47 @@ button:disabled{opacity:.55;cursor:not-allowed;}
   background:#1e293b;
   padding:8px 12px;
   border-radius:8px;
-  margin-bottom:12px;
+  margin-bottom:10px;
   font-size:13px;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.header-badges{
+  display:flex;
+  gap:6px;
+  align-items:center;
 }
 .wake-badge{
   background:#065f46;
   color:#a7f3d0;
-  padding:4px 8px;
+  padding:5px 8px;
   border-radius:12px;
   font-size:12px;
   font-weight:bold;
+}
+.btn-som{
+  background:#334155;
+  color:#f8fafc;
+  padding:5px 10px;
+  border-radius:12px;
+  font-size:12px;
+}
+.limite-vitorias-bar{
+  background:#1e293b;
+  border:1px solid #f59e0b;
+  padding:8px 12px;
+  border-radius:8px;
+  margin-bottom:10px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  font-size:13px;
+  gap:8px;
+}
+.limite-vitorias-bar select{
+  background:#334155;
+  color:white;
+  padding:5px 8px;
 }
 .regra-banner{
   text-align:center;
@@ -329,6 +396,19 @@ button:disabled{opacity:.55;cursor:not-allowed;}
     Importar jogadores salvos neste aparelho para o banco online
   </button>
 
+  <!-- Importar Enquete / Lista do WhatsApp -->
+  <div class="whats-import-box">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <strong style="font-size:14px; color:#38bdf8;">📲 Marcar presença via Enquete/Lista do WhatsApp</strong>
+      <button onclick="toggleCaixaWhats()" style="background:#334155; color:#cbd5e1; font-size:12px; padding:4px 8px;" id="btnToggleWhats">Abrir</button>
+    </div>
+    <div id="areaTextoWhats" class="oculto">
+      <textarea id="textoEnqueteWhats" rows="4" placeholder="Cole aqui a lista ou o print copiado da enquete do WhatsApp..."></textarea>
+      <button onclick="processarListaWhatsApp()" style="background:#38bdf8; color:#082f49; width:100%;">🔍 Identificar e Marcar Jogadores</button>
+      <div id="resultadoMatchWhats" style="margin-top:8px; font-size:13px;"></div>
+    </div>
+  </div>
+
   <div class="contador">
   Jogadores selecionados: <span id="contador">0</span>
   </div>
@@ -356,8 +436,21 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 <!-- ABA 2: PLACAR E REI DA QUADRA -->
 <div id="viewPlacar" class="oculto">
   <div class="placar-header">
-    <span>👑 <strong>Rei da Quadra</strong> (Set de 15 pts)</span>
-    <span class="wake-badge" id="wakeStatus">☀️ Tela Ativa</span>
+    <span>👑 <strong>Rei da Quadra</strong> (15 pts)</span>
+    <div class="header-badges">
+      <button class="btn-som" id="btnToggleSom" onclick="alternarSom()">🔊 Som Ativo</button>
+      <span class="wake-badge" id="wakeStatus">☀️ Tela Ativa</span>
+    </div>
+  </div>
+
+  <!-- Barra de Limite de Vitórias (Ativada apenas com 4 times ou 3 completos + 1 incompleto) -->
+  <div class="limite-vitorias-bar oculto" id="barraLimiteVitorias">
+    <span>🛑 <strong>Limite de vitórias seguidas:</strong></span>
+    <select id="selectLimiteVitorias" onchange="atualizarLimiteVitorias()">
+      <option value="2">Máx. 2 vitórias</option>
+      <option value="3" selected>Máx. 3 vitórias</option>
+      <option value="0">Sem limite</option>
+    </select>
   </div>
 
   <div class="regra-banner" id="bannerRegra">
@@ -418,7 +511,7 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
-import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, getDocs, writeBatch } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
+import { getFirestore, collection, addDoc, deleteDoc, doc, updateDoc, onSnapshot, getDocs, writeBatch, arrayUnion } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAZpTp_hwH9FZrU1gRiFwzYS27sjHlokH4",
@@ -437,6 +530,76 @@ const jogadoresRef = collection(db, "jogadores");
 let jogadores = [];
 let usuarioLogado = null;
 let textoWhatsGlobal = "";
+
+// ==========================================
+// SINTETIZADOR DE ÁUDIO (Web Audio API - Bipes e Apito)
+// ==========================================
+let somAtivo = true;
+let audioCtx = null;
+
+window.alternarSom = function() {
+  somAtivo = !somAtivo;
+  const btn = document.getElementById("btnToggleSom");
+  if (somAtivo) {
+    btn.textContent = "🔊 Som Ativo";
+    btn.style.background = "#334155";
+    btn.style.color = "#f8fafc";
+    tocarSom("ponto");
+  } else {
+    btn.textContent = "🔇 Mudo";
+    btn.style.background = "#7f1d1d";
+    btn.style.color = "#fecaca";
+  }
+}
+
+function tocarSom(tipo) {
+  if (!somAtivo) return;
+  try {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    const agora = audioCtx.currentTime;
+
+    if (tipo === "ponto") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(587.33, agora); // Ré 5
+      osc.frequency.exponentialRampToValueAtTime(880, agora + 0.09); // Lá 5
+      gain.gain.setValueAtTime(0.18, agora);
+      gain.gain.exponentialRampToValueAtTime(0.001, agora + 0.14);
+      osc.start(agora);
+      osc.stop(agora + 0.15);
+    } else if (tipo === "menos") {
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(330, agora);
+      gain.gain.setValueAtTime(0.12, agora);
+      gain.gain.exponentialRampToValueAtTime(0.001, agora + 0.12);
+      osc.start(agora);
+      osc.stop(agora + 0.13);
+    } else if (tipo === "vitoria") {
+      // Apito duplo de fim de set
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(1046.5, agora); // Dó 6
+      osc.frequency.setValueAtTime(1318.5, agora + 0.16); // Mi 6
+      gain.gain.setValueAtTime(0.25, agora);
+      gain.gain.setValueAtTime(0.01, agora + 0.14);
+      gain.gain.setValueAtTime(0.28, agora + 0.16);
+      gain.gain.exponentialRampToValueAtTime(0.001, agora + 0.55);
+      osc.start(agora);
+      osc.stop(agora + 0.56);
+    }
+  } catch (e) {
+    // Ignora bloqueio de autoplay caso ocorra
+  }
+}
 
 // ==========================================
 // WAKE LOCK API (Manter tela sempre ligada)
@@ -513,10 +676,16 @@ onAuthStateChanged(auth, (user)=>{
 });
 
 onSnapshot(jogadoresRef, (snapshot)=>{
-  jogadores = snapshot.docs.map(d=>({ id:d.id, genero:"M", ...d.data() }));
+  // Preserva checkboxes já marcados ao sincronizar
+  const marcadosAntes = new Set();
+  document.querySelectorAll(".presenca:checked").forEach(chk => {
+    marcadosAntes.add(chk.getAttribute("data-id"));
+  });
+
+  jogadores = snapshot.docs.map(d=>({ id:d.id, genero:"M", apelidos:[], ...d.data() }));
   jogadores.sort((a,b)=>String(a.nome || "").localeCompare(String(b.nome || ""), "pt-BR"));
   statusConexao.textContent = "Lista online carregada. Alterações feitas por organizadores aparecem para todos.";
-  renderLista();
+  renderLista(marcadosAntes);
 }, (error)=>{
   console.error(error);
   statusConexao.textContent = "Erro ao carregar dados: " + error.message;
@@ -554,7 +723,8 @@ window.adicionarJogador = async function(){
       nome,
       nomeLower: nome.toLowerCase(),
       genero,
-      nota
+      nota,
+      apelidos: []
     });
     document.getElementById("nome").value="";
     document.getElementById("nota").value="";
@@ -608,7 +778,7 @@ window.importarLocalStorage = async function(){
     if(nomesExistentes.has(chave)) return;
 
     const novoDoc = doc(jogadoresRef);
-    batch.set(novoDoc, { nome, nomeLower: chave, nota, genero });
+    batch.set(novoDoc, { nome, nomeLower: chave, nota, genero, apelidos: [] });
     nomesExistentes.add(chave);
     adicionados++;
   });
@@ -623,16 +793,17 @@ window.importarLocalStorage = async function(){
   }
 }
 
-window.renderLista = function(){
+window.renderLista = function(marcadosSet = null){
   const lista = document.getElementById("listaJogadores");
   lista.innerHTML="";
 
   jogadores.forEach((j)=>{
     const nomeSeguro = String(j.nome).replace(/'/g, "&#39;").replace(/"/g, "&quot;");
     const gen = j.genero === "F" ? "F" : "M";
+    const checkedAttr = (marcadosSet && marcadosSet.has(j.id)) ? "checked" : "";
     lista.innerHTML += `
       <div class="jogador-item">
-        <input type="checkbox" class="presenca" data-id="${j.id}" onchange="atualizarContador()">
+        <input type="checkbox" class="presenca" data-id="${j.id}" ${checkedAttr} onchange="atualizarContador()">
         <span class="tag-genero tag-${gen}">${gen}</span>
         <div class="jogador-nome">${j.nome}</div>
         <div class="nota">${Number(j.nota).toFixed(1)}</div>
@@ -658,6 +829,148 @@ window.selecionarTodos = function(){
 window.limparSelecao = function(){
   document.querySelectorAll(".presenca").forEach(chk=>{ chk.checked = false; });
   atualizarContador();
+}
+
+// ==========================================
+// IMPORTAÇÃO INTELIGENTE DE ENQUETE WHATSAPP
+// ==========================================
+window.toggleCaixaWhats = function(){
+  const box = document.getElementById("areaTextoWhats");
+  const btn = document.getElementById("btnToggleWhats");
+  const oculto = box.classList.toggle("oculto");
+  btn.textContent = oculto ? "Abrir" : "Fechar";
+}
+
+function normalizarTexto(str) {
+  return String(str || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[^\w\s]/gi, " ") // remove emojis, ~, pontuação
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
+}
+
+window.processarListaWhatsApp = function() {
+  const texto = document.getElementById("textoEnqueteWhats").value;
+  if (!texto.trim()) return alert("Cole o texto da enquete ou lista do WhatsApp primeiro.");
+
+  const linhas = texto.split(/\r?\n/);
+  const ignorarPalavras = ["enquete", "votos", "vou", "nao vou", "talvez", "lista", "volei", "confirmados", "espera", "horario", "quadra"];
+
+  let candidatos = [];
+  linhas.forEach(linha => {
+    // Limpa numeração (ex: "1 - ", "02. ", "• ") e horários (ex: "19:30")
+    let limpa = linha
+      .replace(/^[\d\s\-\.\)\•\*]+/, "")
+      .replace(/\d{1,2}:\d{2}/g, "")
+      .trim();
+
+    if (!limpa || limpa.length < 2) return;
+    const norm = normalizarTexto(limpa);
+    if (!norm || norm.length < 2) return;
+    if (ignorarPalavras.some(p => norm === p || norm.startsWith(p + " "))) return;
+
+    candidatos.push({ original: limpa, normalizado: norm });
+  });
+
+  if (candidatos.length === 0) {
+    return alert("Não encontrei nomes válidos no texto colado.");
+  }
+
+  let marcadosCount = 0;
+  let naoReconhecidos = [];
+
+  candidatos.forEach(cand => {
+    // Tenta encontrar o jogador correspondente
+    let match = jogadores.find(j => {
+      const nomeNorm = normalizarTexto(j.nome);
+      const primeiroNome = nomeNorm.split(" ")[0];
+      const apelidosNorm = (j.apelidos || []).map(a => normalizarTexto(a));
+
+      // 1. Nome exato ou apelido salvo
+      if (nomeNorm === cand.normalizado || apelidosNorm.includes(cand.normalizado)) return true;
+
+      // 2. Primeiro nome exato (se não houver homônimos)
+      if (primeiroNome.length >= 3 && cand.normalizado.split(" ")[0] === primeiroNome) {
+        const homonimos = jogadores.filter(outro => normalizarTexto(outro.nome).split(" ")[0] === primeiroNome);
+        if (homonimos.length === 1) return true;
+      }
+
+      // 3. Um contém o outro (ex: "Carlos Henrique" vs "Carlos")
+      if (cand.normalizado.length >= 4 && (nomeNorm.includes(cand.normalizado) || cand.normalizado.includes(nomeNorm))) {
+        return true;
+      }
+
+      return false;
+    });
+
+    if (match) {
+      const chk = document.querySelector(`.presenca[data-id="${match.id}"]`);
+      if (chk && !chk.checked) {
+        chk.checked = true;
+        marcadosCount++;
+      }
+    } else {
+      naoReconhecidos.push(cand);
+    }
+  });
+
+  atualizarContador();
+
+  const resDiv = document.getElementById("resultadoMatchWhats");
+  let html = `<div style="color:#4ade80; font-weight:bold;">✅ ${marcadosCount} jogador(es) marcado(s) automaticamente!</div>`;
+
+  if (naoReconhecidos.length > 0) {
+    const opcoesSelect = jogadores.map(j => `<option value="${j.id}">${j.nome}</option>`).join("");
+    html += `
+      <div style="color:#fbbf24; margin-top:8px; font-weight:bold;">
+        ⚠️ Não reconheci ${naoReconhecidos.length} nome(s) da enquete. Associe abaixo:
+      </div>
+    `;
+    naoReconhecidos.forEach((item, idx) => {
+      const apelidoEscapado = item.original.replace(/'/g, "\\'").replace(/"/g, "&quot;");
+      html += `
+        <div class="nao-encontrado-item" id="unmatched-${idx}">
+          <span>"<strong>${item.original}</strong>" é:</span>
+          <select onchange="vincularApelidoWhats(this.value, '${apelidoEscapado}', 'unmatched-${idx}')">
+            <option value="">-- Ignorar / Escolher --</option>
+            ${opcoesSelect}
+          </select>
+        </div>
+      `;
+    });
+  }
+
+  resDiv.innerHTML = html;
+}
+
+window.vincularApelidoWhats = async function(jogadorId, apelidoOriginal, rowId) {
+  if (!jogadorId) return;
+
+  // Marca o checkbox imediatamente
+  const chk = document.querySelector(`.presenca[data-id="${jogadorId}"]`);
+  if (chk) {
+    chk.checked = true;
+    atualizarContador();
+  }
+
+  // Se o organizador estiver logado, salva o apelido no Firebase para reconhecer sozinho nas próximas vezes
+  if (usuarioLogado) {
+    try {
+      await updateDoc(doc(db, "jogadores", jogadorId), {
+        apelidos: arrayUnion(apelidoOriginal)
+      });
+    } catch (e) {
+      console.error("Erro ao salvar apelido:", e);
+    }
+  }
+
+  const row = document.getElementById(rowId);
+  if (row) {
+    const jog = jogadores.find(j => j.id === jogadorId);
+    row.innerHTML = `<span style="color:#4ade80;">✅ "${apelidoOriginal}" vinculado a <strong>${jog?.nome}</strong>${usuarioLogado ? " (salvo!)" : ""}</span>`;
+  }
 }
 
 // ==========================================
@@ -738,15 +1051,23 @@ window.copiarWhatsApp = async function(){
 let estadoRei = {
   emQuadraA: { nome: "Time 1", vitorias: 0, jogadores: [], isEspera: false },
   emQuadraB: { nome: "Time 2", vitorias: 0, jogadores: [], isEspera: false },
-  fila: [], // Lista de objetos { nome, vitorias, jogadores, isEspera, sugestoesPorTime }
-  sugestoesEspera: {} // Mapeia nome do time que saiu -> jogadores sugeridos
+  fila: [],
+  sugestoesEspera: {},
+  limiteAtivo: false,
+  maxVitorias: 3
 };
 
 let placar = {
   pontosA: 0,
   pontosB: 0,
-  vencedor: null // 'A' ou 'B'
+  vencedor: null
 };
+
+window.atualizarLimiteVitorias = function() {
+  const val = parseInt(document.getElementById("selectLimiteVitorias").value, 10);
+  estadoRei.maxVitorias = val;
+  atualizarBotaoConfirmarVitoria();
+}
 
 function carregarTimesNoReiDaQuadra(timesFinais, espera, mapaSugestoes) {
   let listaEquipes = timesFinais.map((jogadoresTime, idx) => ({
@@ -765,6 +1086,20 @@ function carregarTimesNoReiDaQuadra(timesFinais, espera, mapaSugestoes) {
     });
   }
 
+  // Regra solicitada: Só ativa limite de vitórias se tiver 4 times completos OU 3 completos + 1 incompleto
+  const tem4Completos = timesFinais.length >= 4;
+  const tem3CompletosE1Incompleto = (timesFinais.length === 3 && espera && espera.length > 0);
+  estadoRei.limiteAtivo = tem4Completos || tem3CompletosE1Incompleto;
+
+  const barraLimite = document.getElementById("barraLimiteVitorias");
+  barraLimite.classList.toggle("oculto", !estadoRei.limiteAtivo);
+
+  if (estadoRei.limiteAtivo) {
+    estadoRei.maxVitorias = parseInt(document.getElementById("selectLimiteVitorias").value, 10);
+  } else {
+    estadoRei.maxVitorias = 0;
+  }
+
   estadoRei.emQuadraA = listaEquipes[0] || { nome: "Time 1", vitorias: 0, jogadores: [], isEspera: false };
   estadoRei.emQuadraB = listaEquipes[1] || { nome: "Time 2", vitorias: 0, jogadores: [], isEspera: false };
   estadoRei.fila = listaEquipes.slice(2);
@@ -778,11 +1113,13 @@ function atualizarInterfaceRei() {
   document.getElementById("nomeTimeA").textContent = estadoRei.emQuadraA.nome;
   document.getElementById("nomeTimeB").textContent = estadoRei.emQuadraB.nome;
 
+  const limTxt = (estadoRei.limiteAtivo && estadoRei.maxVitorias > 0) ? ` / ${estadoRei.maxVitorias}` : "";
+
   document.getElementById("streakTimeA").textContent =
-    estadoRei.emQuadraA.vitorias > 0 ? `🔥 ${estadoRei.emQuadraA.vitorias} ${estadoRei.emQuadraA.vitorias === 1 ? "vitória" : "vitórias"} seguida(s)` : "";
+    estadoRei.emQuadraA.vitorias > 0 ? `🔥 ${estadoRei.emQuadraA.vitorias}${limTxt} vitória(s)` : "";
 
   document.getElementById("streakTimeB").textContent =
-    estadoRei.emQuadraB.vitorias > 0 ? `🔥 ${estadoRei.emQuadraB.vitorias} ${estadoRei.emQuadraB.vitorias === 1 ? "vitória" : "vitórias"} seguida(s)` : "";
+    estadoRei.emQuadraB.vitorias > 0 ? `🔥 ${estadoRei.emQuadraB.vitorias}${limTxt} vitória(s)` : "";
 
   const listaFilaEl = document.getElementById("listaFilaRei");
   if (estadoRei.fila.length === 0) {
@@ -808,21 +1145,14 @@ function verificarRegraDeVitoria(pA, pB) {
   const banner = document.getElementById("bannerRegra");
   banner.className = "regra-banner";
 
-  // Antes de chegar perto do fim do set
   if (pA < 14 && pB < 14) {
     banner.textContent = "Set Normal: Vai a 15 pontos (mín. 2 de diferença)";
     return null;
   }
 
-  // Chegou em pelo menos 14 pontos de algum lado
-  // Quantas vezes empatou a partir do 14x14?
-  // 14x14 = 1º empate (vai a 16, dif 2)
-  // 15x15 = 2º empate (vai a 17, dif 2)
-  // 16x16 = 3º empate -> Morte súbita de 3 pontos (quem fizer 19 vence!)
   const minPontos = Math.min(pA, pB);
 
   if (minPontos < 14) {
-    // Um está com 15+ e o outro com 13 ou menos
     banner.textContent = "Set Normal: Vai a 15 pontos (mín. 2 de diferença)";
     if (pA >= 15 && pA - pB >= 2) return "A";
     if (pB >= 15 && pB - pA >= 2) return "B";
@@ -830,7 +1160,6 @@ function verificarRegraDeVitoria(pA, pB) {
   }
 
   if (minPontos === 14) {
-    // 1º empate (14x14) -> Vai a 2 (fecha em 16x14)
     banner.classList.add("regra-alerta");
     banner.textContent = "⚠️ 1ª Prorrogação (14x14): Vai a 2 pontos de diferença!";
     if (pA - pB >= 2) return "A";
@@ -839,7 +1168,6 @@ function verificarRegraDeVitoria(pA, pB) {
   }
 
   if (minPontos === 15) {
-    // 2º empate (15x15) -> Vai a 2 (fecha em 17x15)
     banner.classList.add("regra-alerta");
     banner.textContent = "⚠️ 2ª Prorrogação (15x15): Vai a 2 pontos de diferença!";
     if (pA - pB >= 2) return "A";
@@ -847,8 +1175,6 @@ function verificarRegraDeVitoria(pA, pB) {
     return null;
   }
 
-  // Se minPontos >= 16 (empatou 16x16 pela 3ª vez):
-  // Ganha quem fizer 3 pontos direto a partir do 16 (ou seja, 19 pontos!)
   banner.classList.add("regra-morte-subita");
   banner.textContent = "🔥 3º Empate (16x16): Quem fizer 3 pontos vence (19 pts direto)!";
 
@@ -857,7 +1183,32 @@ function verificarRegraDeVitoria(pA, pB) {
   return null;
 }
 
+function atualizarBotaoConfirmarVitoria() {
+  const btnVitoria = document.getElementById("btnConfirmarVitoria");
+  if (!placar.vencedor) {
+    btnVitoria.classList.add("oculto");
+    return;
+  }
+
+  const timeVenc = placar.vencedor === "A" ? estadoRei.emQuadraA : estadoRei.emQuadraB;
+  const proximasVitorias = timeVenc.vitorias + 1;
+  const atingiuLimite = estadoRei.limiteAtivo && estadoRei.maxVitorias > 0 && proximasVitorias >= estadoRei.maxVitorias;
+
+  if (atingiuLimite && estadoRei.fila.length >= 2) {
+    btnVitoria.textContent = `👑 ${timeVenc.nome} atingiu ${proximasVitorias} vitórias! Rodar os 2 times`;
+    btnVitoria.style.background = "#f59e0b";
+    btnVitoria.style.color = "#1f2937";
+  } else {
+    btnVitoria.textContent = `🏆 ${timeVenc.nome} Venceu! Confirmar e Rotacionar`;
+    btnVitoria.style.background = "#22c55e";
+    btnVitoria.style.color = "#052e16";
+  }
+  btnVitoria.classList.remove("oculto");
+}
+
 window.alterarPontos = function(lado, delta) {
+  const vencedorAntes = placar.vencedor;
+
   if (lado === "A") {
     placar.pontosA = Math.max(0, placar.pontosA + delta);
   } else {
@@ -870,20 +1221,24 @@ window.alterarPontos = function(lado, delta) {
   const vencedor = verificarRegraDeVitoria(placar.pontosA, placar.pontosB);
   placar.vencedor = vencedor;
 
+  // Dispara áudio adequado
+  if (delta > 0) {
+    if (vencedor && !vencedorAntes) {
+      tocarSom("vitoria");
+    } else {
+      tocarSom("ponto");
+    }
+  } else if (delta < 0) {
+    tocarSom("menos");
+  }
+
   const cardA = document.getElementById("cardTimeA");
   const cardB = document.getElementById("cardTimeB");
-  const btnVitoria = document.getElementById("btnConfirmarVitoria");
 
   cardA.classList.toggle("vencedor", vencedor === "A");
   cardB.classList.toggle("vencedor", vencedor === "B");
 
-  if (vencedor) {
-    const nomeVenc = vencedor === "A" ? estadoRei.emQuadraA.nome : estadoRei.emQuadraB.nome;
-    btnVitoria.textContent = `🏆 ${nomeVenc} Venceu! Confirmar e Rotacionar`;
-    btnVitoria.classList.remove("oculto");
-  } else {
-    btnVitoria.classList.add("oculto");
-  }
+  atualizarBotaoConfirmarVitoria();
 }
 
 window.zerarPlacar = function() {
@@ -901,7 +1256,6 @@ window.zerarPlacar = function() {
 }
 
 window.inverterLados = function() {
-  // Troca posições e pontuações na tela
   const tempEq = estadoRei.emQuadraA;
   estadoRei.emQuadraA = estadoRei.emQuadraB;
   estadoRei.emQuadraB = tempEq;
@@ -914,7 +1268,13 @@ window.inverterLados = function() {
   document.getElementById("pontosTimeB").textContent = placar.pontosB;
 
   atualizarInterfaceRei();
-  alterarPontos("A", 0); // Reavalia destaque visual do vencedor
+
+  const cardA = document.getElementById("cardTimeA");
+  const cardB = document.getElementById("cardTimeB");
+  placar.vencedor = verificarRegraDeVitoria(placar.pontosA, placar.pontosB);
+  cardA.classList.toggle("vencedor", placar.vencedor === "A");
+  cardB.classList.toggle("vencedor", placar.vencedor === "B");
+  atualizarBotaoConfirmarVitoria();
 }
 
 window.confirmarVitoriaRei = function() {
@@ -924,15 +1284,38 @@ window.confirmarVitoriaRei = function() {
   const timeVencedor = vencedorEhA ? estadoRei.emQuadraA : estadoRei.emQuadraB;
   const timePerdedor = vencedorEhA ? estadoRei.emQuadraB : estadoRei.emQuadraA;
 
-  // Atualiza contagem de vitórias
   timeVencedor.vitorias += 1;
   timePerdedor.vitorias = 0;
 
-  if (estadoRei.fila.length > 0) {
-    // O próximo da fila entra em quadra
+  const atingiuLimite = estadoRei.limiteAtivo && estadoRei.maxVitorias > 0 && timeVencedor.vitorias >= estadoRei.maxVitorias;
+
+  if (atingiuLimite && estadoRei.fila.length >= 2) {
+    // Ambos saem de quadra para descansar e entram os 2 próximos da fila
+    timeVencedor.vitorias = 0;
+    const prox1 = estadoRei.fila.shift();
+    const prox2 = estadoRei.fila.shift();
+
+    let msgExtra = "";
+    if (prox1.isEspera && estadoRei.sugestoesEspera[timePerdedor.nome]) {
+      msgExtra = `\n• Empréstimo sugerido de ${timePerdedor.nome}: ${estadoRei.sugestoesEspera[timePerdedor.nome]}`;
+    } else if (prox2.isEspera && estadoRei.sugestoesEspera[timePerdedor.nome]) {
+      msgExtra = `\n• Empréstimo sugerido de ${timePerdedor.nome}: ${estadoRei.sugestoesEspera[timePerdedor.nome]}`;
+    }
+
+    estadoRei.fila.push(timePerdedor);
+    estadoRei.fila.push(timeVencedor);
+
+    estadoRei.emQuadraA = prox1;
+    estadoRei.emQuadraB = prox2;
+
+    alert(
+      `👑 Limite de vitórias atingido!\n\n` +
+      `• ${timeVencedor.nome} descansará no fim da fila.\n` +
+      `• Entram em quadra: ${prox1.nome} vs ${prox2.nome}${msgExtra}`
+    );
+  } else if (estadoRei.fila.length > 0) {
     const proximoTime = estadoRei.fila.shift();
 
-    // Verifica se o próximo é o time da espera e mostra quem deve ser emprestado do perdedor
     if (proximoTime.isEspera && estadoRei.sugestoesEspera[timePerdedor.nome]) {
       const emprestados = estadoRei.sugestoesEspera[timePerdedor.nome];
       alert(
@@ -943,7 +1326,6 @@ window.confirmarVitoriaRei = function() {
       );
     }
 
-    // Perdedor vai para o fim da fila
     estadoRei.fila.push(timePerdedor);
 
     if (vencedorEhA) {
@@ -1141,7 +1523,6 @@ window.sortearTimes = function(){
     textoWhats += textoWhatsSugestoes;
   }
 
-  // Sincroniza os times sorteados diretamente na aba do Placar & Rei da Quadra
   carregarTimesNoReiDaQuadra(timesFinais, esperaEmbaralhada, mapaSugestoesRei);
 
   textoWhatsGlobal = textoWhats.trim();
