@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Vôlei do Norte Village</title>
+
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0f172a">
 <link rel="apple-touch-icon" href="icon-512.png">
@@ -19,11 +20,35 @@ body{
   font-family: Arial, sans-serif;
   background:#0f172a;
   color:white;
-  padding:20px;
+  padding:16px;
   margin:0;
 }
 .container{max-width:760px;margin:auto;}
-h1{text-align:center;margin-bottom:10px;}
+h1{text-align:center;margin:6px 0 12px;font-size:24px;}
+
+/* Navegação por Abas */
+.nav-tabs{
+  display:flex;
+  gap:8px;
+  margin-bottom:16px;
+  background:#1e293b;
+  padding:6px;
+  border-radius:10px;
+}
+.tab-btn{
+  flex:1;
+  padding:10px;
+  background:transparent;
+  color:#94a3b8;
+  border-radius:8px;
+  font-size:15px;
+  transition:0.2s;
+}
+.tab-btn.active{
+  background:#3b82f6;
+  color:white;
+}
+
 .status{
   background:#1e293b;
   border-radius:10px;
@@ -75,12 +100,13 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 .nota{width:45px;text-align:right;font-variant-numeric:tabular-nums;}
 .btn-editar{background:#f59e0b;color:#1f2937;}
 .btn-excluir{background:#ef4444;color:white;}
-.btn-acao{background:#3b82f6;color:white;width:100%;margin-top:10px;}
+.btn-acao{background:#3b82f6;color:white;width:100%;margin-top:10px;padding:12px;font-size:15px;}
 .btn-whatsapp{
   background:#25d366;
   color:white;
   width:100%;
   margin-top:10px;
+  padding:12px;
   font-size:15px;
   display:flex;
   align-items:center;
@@ -107,10 +133,152 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 }
 .aviso{font-size:13px;color:#cbd5e1;margin-top:-6px;margin-bottom:12px;line-height:1.4;}
 .oculto{display:none!important;}
+
+/* Estilos do Placar */
+.placar-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:#1e293b;
+  padding:8px 12px;
+  border-radius:8px;
+  margin-bottom:12px;
+  font-size:13px;
+}
+.wake-badge{
+  background:#065f46;
+  color:#a7f3d0;
+  padding:4px 8px;
+  border-radius:12px;
+  font-size:12px;
+  font-weight:bold;
+}
+.regra-banner{
+  text-align:center;
+  padding:8px;
+  border-radius:8px;
+  margin-bottom:12px;
+  font-weight:bold;
+  font-size:14px;
+  background:#334155;
+  color:#38bdf8;
+}
+.regra-alerta{
+  background:#7c2d12;
+  color:#fed7aa;
+  border:1px solid #f97316;
+}
+.regra-morte-subita{
+  background:#7f1d1d;
+  color:#fecaca;
+  border:1px solid #ef4444;
+}
+.placar-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-bottom:14px;
+}
+.placar-card{
+  background:#1e293b;
+  border-radius:12px;
+  padding:14px 10px;
+  text-align:center;
+  border:2px solid #334155;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-between;
+}
+.placar-card.vencedor{
+  border-color:#22c55e;
+  background:#064e3b;
+}
+.time-titulo-placar{
+  font-size:17px;
+  font-weight:bold;
+  margin-bottom:4px;
+  color:#f8fafc;
+}
+.streak-badge{
+  font-size:12px;
+  color:#fde047;
+  margin-bottom:8px;
+  min-height:16px;
+}
+.pontos-numero{
+  font-size:64px;
+  font-weight:bold;
+  line-height:1.1;
+  margin:10px 0;
+  font-variant-numeric:tabular-nums;
+}
+.placar-botoes{
+  display:flex;
+  gap:8px;
+  margin-top:8px;
+}
+.btn-menos{
+  flex:1;
+  background:#ef4444;
+  color:white;
+  font-size:20px;
+  padding:12px 0;
+  border-radius:8px;
+}
+.btn-mais{
+  flex:2;
+  background:#22c55e;
+  color:white;
+  font-size:22px;
+  padding:12px 0;
+  border-radius:8px;
+}
+.placar-controles{
+  display:flex;
+  gap:8px;
+  margin-bottom:16px;
+}
+.btn-zerar{
+  flex:1;
+  background:#64748b;
+  color:white;
+  padding:10px;
+}
+.btn-trocar-lado{
+  flex:1;
+  background:#334155;
+  color:white;
+  padding:10px;
+}
+.btn-confirmar-vitoria{
+  width:100%;
+  background:#22c55e;
+  color:#052e16;
+  padding:14px;
+  font-size:16px;
+  border-radius:10px;
+  margin-bottom:16px;
+  box-shadow:0 4px 12px rgba(34,197,94,0.35);
+}
+.fila-rei-box{
+  background:#1e293b;
+  border-radius:10px;
+  padding:12px;
+  border:1px solid #334155;
+}
+.fila-item{
+  background:#0f172a;
+  padding:8px 10px;
+  border-radius:6px;
+  margin-top:6px;
+  font-size:13px;
+}
+
 @media(max-width:600px){
   body{padding:12px;}
   .jogador-item{align-items:center;}
   .btn-editar,.btn-excluir{padding:7px 9px;}
+  .pontos-numero{font-size:54px;}
 }
 </style>
 </head>
@@ -118,63 +286,132 @@ button:disabled{opacity:.55;cursor:not-allowed;}
 <body>
 <div class="container">
 
-<h1>Vôlei do Norte Village</h1>
+<h1>🏐 Vôlei do Norte Village</h1>
 
-<div class="status" id="statusConexao">Conectando ao Firebase...</div>
-
-<div class="login-area" id="areaLogin">
-  <input type="email" id="email" placeholder="E-mail do organizador">
-  <input type="password" id="senha" placeholder="Senha">
-  <button class="btn-login" onclick="loginOrganizador()">Entrar como organizador</button>
+<!-- Menu de Abas -->
+<div class="nav-tabs">
+  <button class="tab-btn active" id="tabSorteador" onclick="mudarAba('sorteador')">🎲 Sorteador</button>
+  <button class="tab-btn" id="tabPlacar" onclick="mudarAba('placar')">⏱️ Placar & Rei da Quadra</button>
 </div>
 
-<div class="login-area oculto" id="areaLogado">
-  <div style="flex:1; align-self:center; color:#bbf7d0; font-weight:bold;">
-    Organizador logado: <span id="emailLogado"></span>
+<!-- ABA 1: SORTEADOR -->
+<div id="viewSorteador">
+  <div class="status" id="statusConexao">Conectando ao Firebase...</div>
+
+  <div class="login-area" id="areaLogin">
+    <input type="email" id="email" placeholder="E-mail do organizador">
+    <input type="password" id="senha" placeholder="Senha">
+    <button class="btn-login" onclick="loginOrganizador()">Entrar como organizador</button>
   </div>
-  <button class="btn-logout" onclick="logoutOrganizador()">Sair</button>
-</div>
 
-<div class="aviso" id="avisoVisitante">
-  Visitantes podem visualizar, selecionar jogadores e sortear times. Para adicionar, excluir ou alterar notas, entre como organizador.
-</div>
+  <div class="login-area oculto" id="areaLogado">
+    <div style="flex:1; align-self:center; color:#bbf7d0; font-weight:bold;">
+      Organizador logado: <span id="emailLogado"></span>
+    </div>
+    <button class="btn-logout" onclick="logoutOrganizador()">Sair</button>
+  </div>
 
-<div class="add-area oculto" id="areaAdicionar">
-  <input type="text" id="nome" placeholder="Nome do jogador">
-  <select id="genero">
-    <option value="M">Masculino</option>
-    <option value="F">Feminino</option>
-  </select>
-  <input type="number" id="nota" placeholder="Nota (1-10)" min="1" max="10" step="0.1">
-  <button class="btn-add" onclick="adicionarJogador()">Adicionar</button>
-</div>
+  <div class="aviso" id="avisoVisitante">
+    Visitantes podem visualizar, selecionar jogadores e sortear times. Para adicionar, excluir ou alterar notas, entre como organizador.
+  </div>
 
-<button class="btn-importar oculto" id="btnImportar" onclick="importarLocalStorage()">
-  Importar jogadores salvos neste aparelho para o banco online
-</button>
+  <div class="add-area oculto" id="areaAdicionar">
+    <input type="text" id="nome" placeholder="Nome do jogador">
+    <select id="genero">
+      <option value="M">Masculino</option>
+      <option value="F">Feminino</option>
+    </select>
+    <input type="number" id="nota" placeholder="Nota (1-10)" min="1" max="10" step="0.1">
+    <button class="btn-add" onclick="adicionarJogador()">Adicionar</button>
+  </div>
 
-<div class="contador">
-Jogadores selecionados: <span id="contador">0</span>
-</div>
-
-<div style="display:flex; gap:10px; margin-bottom:10px;">
-  <button onclick="selecionarTodos()" style="flex:1; background:#22c55e; color:white;">
-    Selecionar todos
+  <button class="btn-importar oculto" id="btnImportar" onclick="importarLocalStorage()">
+    Importar jogadores salvos neste aparelho para o banco online
   </button>
-  <button onclick="limparSelecao()" style="flex:1; background:#ef4444; color:white;">
-    Limpar seleção
+
+  <div class="contador">
+  Jogadores selecionados: <span id="contador">0</span>
+  </div>
+
+  <div style="display:flex; gap:10px; margin-bottom:10px;">
+    <button onclick="selecionarTodos()" style="flex:1; background:#22c55e; color:white;">
+      Selecionar todos
+    </button>
+    <button onclick="limparSelecao()" style="flex:1; background:#ef4444; color:white;">
+      Limpar seleção
+    </button>
+  </div>
+
+  <div id="listaJogadores"></div>
+
+  <button class="btn-acao" onclick="sortearTimes()">Sortear Times</button>
+
+  <button class="btn-whatsapp oculto" id="btnCopiarWhats" onclick="copiarWhatsApp()">
+    📋 Copiar para WhatsApp
   </button>
+
+  <div class="times" id="resultado"></div>
 </div>
 
-<div id="listaJogadores"></div>
+<!-- ABA 2: PLACAR E REI DA QUADRA -->
+<div id="viewPlacar" class="oculto">
+  <div class="placar-header">
+    <span>👑 <strong>Rei da Quadra</strong> (Set de 15 pts)</span>
+    <span class="wake-badge" id="wakeStatus">☀️ Tela Ativa</span>
+  </div>
 
-<button class="btn-acao" onclick="sortearTimes()">Sortear Times</button>
+  <div class="regra-banner" id="bannerRegra">
+    Set Normal: Vai a 15 pontos (mín. 2 de diferença)
+  </div>
 
-<button class="btn-whatsapp oculto" id="btnCopiarWhats" onclick="copiarWhatsApp()">
-  📋 Copiar para WhatsApp
-</button>
+  <button class="btn-confirmar-vitoria oculto" id="btnConfirmarVitoria" onclick="confirmarVitoriaRei()">
+    🏆 Confirmar Vitória e Rotacionar Fila
+  </button>
 
-<div class="times" id="resultado"></div>
+  <div class="placar-grid">
+    <!-- Lado Esquerdo (Time A) -->
+    <div class="placar-card" id="cardTimeA">
+      <div>
+        <div class="time-titulo-placar" id="nomeTimeA">Time 1</div>
+        <div class="streak-badge" id="streakTimeA"></div>
+      </div>
+      <div class="pontos-numero" id="pontosTimeA">0</div>
+      <div class="placar-botoes">
+        <button class="btn-menos" onclick="alterarPontos('A', -1)">-1</button>
+        <button class="btn-mais" onclick="alterarPontos('A', 1)">+1</button>
+      </div>
+    </div>
+
+    <!-- Lado Direito (Time B) -->
+    <div class="placar-card" id="cardTimeB">
+      <div>
+        <div class="time-titulo-placar" id="nomeTimeB">Time 2</div>
+        <div class="streak-badge" id="streakTimeB"></div>
+      </div>
+      <div class="pontos-numero" id="pontosTimeB">0</div>
+      <div class="placar-botoes">
+        <button class="btn-menos" onclick="alterarPontos('B', -1)">-1</button>
+        <button class="btn-mais" onclick="alterarPontos('B', 1)">+1</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="placar-controles">
+    <button class="btn-trocar-lado" onclick="inverterLados()">⇄ Inverter Lados</button>
+    <button class="btn-zerar" onclick="zerarPlacar()">🔄 Zerar Placar</button>
+  </div>
+
+  <!-- Fila de Espera do Rei da Quadra -->
+  <div class="fila-rei-box">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <strong style="color:#38bdf8; font-size:14px;">📋 Fila de Próximos em Quadra</strong>
+      <button onclick="resetarFilaManual()" style="background:#334155; color:#cbd5e1; font-size:12px; padding:4px 8px;">Resetar Fila</button>
+    </div>
+    <div id="listaFilaRei" style="margin-top:8px; font-size:13px; color:#cbd5e1;">
+      Sorteie os times na aba "Sorteador" para carregar a fila automaticamente, ou jogue no modo livre acima!
+    </div>
+  </div>
+</div>
 
 </div>
 
@@ -201,6 +438,55 @@ let jogadores = [];
 let usuarioLogado = null;
 let textoWhatsGlobal = "";
 
+// ==========================================
+// WAKE LOCK API (Manter tela sempre ligada)
+// ==========================================
+let wakeLock = null;
+
+async function ativarWakeLock() {
+  const badge = document.getElementById("wakeStatus");
+  if ("wakeLock" in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request("screen");
+      badge.textContent = "☀️ Tela Ativa";
+      badge.style.background = "#065f46";
+      badge.style.color = "#a7f3d0";
+      wakeLock.addEventListener("release", () => {
+        badge.textContent = "🌙 Tela Normal";
+      });
+    } catch (err) {
+      badge.textContent = "🌙 Tela Normal";
+    }
+  } else {
+    badge.textContent = "Placar Ativo";
+  }
+}
+
+document.addEventListener("visibilitychange", async () => {
+  if (wakeLock !== null && document.visibilityState === "visible") {
+    await ativarWakeLock();
+  }
+});
+
+// ==========================================
+// NAVEGAÇÃO ENTRE ABAS
+// ==========================================
+window.mudarAba = function(aba) {
+  const isSorteador = aba === "sorteador";
+  document.getElementById("viewSorteador").classList.toggle("oculto", !isSorteador);
+  document.getElementById("viewPlacar").classList.toggle("oculto", isSorteador);
+
+  document.getElementById("tabSorteador").classList.toggle("active", isSorteador);
+  document.getElementById("tabPlacar").classList.toggle("active", !isSorteador);
+
+  if (!isSorteador) {
+    ativarWakeLock();
+  }
+}
+
+// ==========================================
+// FIREBASE E LISTA DE JOGADORES
+// ==========================================
 const statusConexao = document.getElementById("statusConexao");
 const areaLogin = document.getElementById("areaLogin");
 const areaLogado = document.getElementById("areaLogado");
@@ -234,7 +520,6 @@ onSnapshot(jogadoresRef, (snapshot)=>{
 }, (error)=>{
   console.error(error);
   statusConexao.textContent = "Erro ao carregar dados: " + error.message;
-  alert("Erro ao carregar dados do Firebase: " + error.message);
 });
 
 window.loginOrganizador = async function(){
@@ -274,7 +559,6 @@ window.adicionarJogador = async function(){
     document.getElementById("nome").value="";
     document.getElementById("nota").value="";
   }catch(e){
-    console.error(e);
     alert("Erro ao salvar no Firebase: " + e.message);
   }
 }
@@ -335,7 +619,6 @@ window.importarLocalStorage = async function(){
     await batch.commit();
     alert(`${adicionados} jogadores importados para o banco online.`);
   }catch(e){
-    console.error(e);
     alert("Erro ao importar para o Firebase: " + e.message);
   }
 }
@@ -377,6 +660,9 @@ window.limparSelecao = function(){
   atualizarContador();
 }
 
+// ==========================================
+// ALGORITMO DE SORTEIO MONTE CARLO
+// ==========================================
 function embaralhar(array){
   let arr = [...array];
   for(let i = arr.length - 1; i > 0; i--){
@@ -442,10 +728,249 @@ window.copiarWhatsApp = async function(){
       btn.style.background = "#25d366";
     }, 2000);
   }catch(e){
-    alert("Não foi possível copiar automaticamente. Selecione e copie o texto manualmente.");
+    alert("Não foi possível copiar automaticamente.");
   }
 }
 
+// ==========================================
+// ESTADO DO REI DA QUADRA E PLACAR
+// ==========================================
+let estadoRei = {
+  emQuadraA: { nome: "Time 1", vitorias: 0, jogadores: [], isEspera: false },
+  emQuadraB: { nome: "Time 2", vitorias: 0, jogadores: [], isEspera: false },
+  fila: [], // Lista de objetos { nome, vitorias, jogadores, isEspera, sugestoesPorTime }
+  sugestoesEspera: {} // Mapeia nome do time que saiu -> jogadores sugeridos
+};
+
+let placar = {
+  pontosA: 0,
+  pontosB: 0,
+  vencedor: null // 'A' ou 'B'
+};
+
+function carregarTimesNoReiDaQuadra(timesFinais, espera, mapaSugestoes) {
+  let listaEquipes = timesFinais.map((jogadoresTime, idx) => ({
+    nome: `Time ${idx + 1}`,
+    vitorias: 0,
+    jogadores: jogadoresTime,
+    isEspera: false
+  }));
+
+  if (espera && espera.length > 0) {
+    listaEquipes.push({
+      nome: `Time Espera (${espera.length} + empréstimo)`,
+      vitorias: 0,
+      jogadores: espera,
+      isEspera: true
+    });
+  }
+
+  estadoRei.emQuadraA = listaEquipes[0] || { nome: "Time 1", vitorias: 0, jogadores: [], isEspera: false };
+  estadoRei.emQuadraB = listaEquipes[1] || { nome: "Time 2", vitorias: 0, jogadores: [], isEspera: false };
+  estadoRei.fila = listaEquipes.slice(2);
+  estadoRei.sugestoesEspera = mapaSugestoes || {};
+
+  zerarPlacar();
+  atualizarInterfaceRei();
+}
+
+function atualizarInterfaceRei() {
+  document.getElementById("nomeTimeA").textContent = estadoRei.emQuadraA.nome;
+  document.getElementById("nomeTimeB").textContent = estadoRei.emQuadraB.nome;
+
+  document.getElementById("streakTimeA").textContent =
+    estadoRei.emQuadraA.vitorias > 0 ? `🔥 ${estadoRei.emQuadraA.vitorias} ${estadoRei.emQuadraA.vitorias === 1 ? "vitória" : "vitórias"} seguida(s)` : "";
+
+  document.getElementById("streakTimeB").textContent =
+    estadoRei.emQuadraB.vitorias > 0 ? `🔥 ${estadoRei.emQuadraB.vitorias} ${estadoRei.emQuadraB.vitorias === 1 ? "vitória" : "vitórias"} seguida(s)` : "";
+
+  const listaFilaEl = document.getElementById("listaFilaRei");
+  if (estadoRei.fila.length === 0) {
+    listaFilaEl.innerHTML = `<span style="color:#94a3b8;">Nenhum time aguardando na fila (apenas 2 times em jogo).</span>`;
+    return;
+  }
+
+  listaFilaEl.innerHTML = estadoRei.fila.map((eq, idx) => {
+    let detalhe = eq.jogadores.length > 0
+      ? `<div style="color:#94a3b8; font-size:12px; margin-top:2px;">${eq.jogadores.map(j => j.nome).join(", ")}</div>`
+      : "";
+
+    return `
+      <div class="fila-item">
+        <strong>${idx + 1}º da Fila:</strong> ${eq.nome}
+        ${detalhe}
+      </div>
+    `;
+  }).join("");
+}
+
+function verificarRegraDeVitoria(pA, pB) {
+  const banner = document.getElementById("bannerRegra");
+  banner.className = "regra-banner";
+
+  // Antes de chegar perto do fim do set
+  if (pA < 14 && pB < 14) {
+    banner.textContent = "Set Normal: Vai a 15 pontos (mín. 2 de diferença)";
+    return null;
+  }
+
+  // Chegou em pelo menos 14 pontos de algum lado
+  // Quantas vezes empatou a partir do 14x14?
+  // 14x14 = 1º empate (vai a 16, dif 2)
+  // 15x15 = 2º empate (vai a 17, dif 2)
+  // 16x16 = 3º empate -> Morte súbita de 3 pontos (quem fizer 19 vence!)
+  const minPontos = Math.min(pA, pB);
+
+  if (minPontos < 14) {
+    // Um está com 15+ e o outro com 13 ou menos
+    banner.textContent = "Set Normal: Vai a 15 pontos (mín. 2 de diferença)";
+    if (pA >= 15 && pA - pB >= 2) return "A";
+    if (pB >= 15 && pB - pA >= 2) return "B";
+    return null;
+  }
+
+  if (minPontos === 14) {
+    // 1º empate (14x14) -> Vai a 2 (fecha em 16x14)
+    banner.classList.add("regra-alerta");
+    banner.textContent = "⚠️ 1ª Prorrogação (14x14): Vai a 2 pontos de diferença!";
+    if (pA - pB >= 2) return "A";
+    if (pB - pA >= 2) return "B";
+    return null;
+  }
+
+  if (minPontos === 15) {
+    // 2º empate (15x15) -> Vai a 2 (fecha em 17x15)
+    banner.classList.add("regra-alerta");
+    banner.textContent = "⚠️ 2ª Prorrogação (15x15): Vai a 2 pontos de diferença!";
+    if (pA - pB >= 2) return "A";
+    if (pB - pA >= 2) return "B";
+    return null;
+  }
+
+  // Se minPontos >= 16 (empatou 16x16 pela 3ª vez):
+  // Ganha quem fizer 3 pontos direto a partir do 16 (ou seja, 19 pontos!)
+  banner.classList.add("regra-morte-subita");
+  banner.textContent = "🔥 3º Empate (16x16): Quem fizer 3 pontos vence (19 pts direto)!";
+
+  if (pA >= 19) return "A";
+  if (pB >= 19) return "B";
+  return null;
+}
+
+window.alterarPontos = function(lado, delta) {
+  if (lado === "A") {
+    placar.pontosA = Math.max(0, placar.pontosA + delta);
+  } else {
+    placar.pontosB = Math.max(0, placar.pontosB + delta);
+  }
+
+  document.getElementById("pontosTimeA").textContent = placar.pontosA;
+  document.getElementById("pontosTimeB").textContent = placar.pontosB;
+
+  const vencedor = verificarRegraDeVitoria(placar.pontosA, placar.pontosB);
+  placar.vencedor = vencedor;
+
+  const cardA = document.getElementById("cardTimeA");
+  const cardB = document.getElementById("cardTimeB");
+  const btnVitoria = document.getElementById("btnConfirmarVitoria");
+
+  cardA.classList.toggle("vencedor", vencedor === "A");
+  cardB.classList.toggle("vencedor", vencedor === "B");
+
+  if (vencedor) {
+    const nomeVenc = vencedor === "A" ? estadoRei.emQuadraA.nome : estadoRei.emQuadraB.nome;
+    btnVitoria.textContent = `🏆 ${nomeVenc} Venceu! Confirmar e Rotacionar`;
+    btnVitoria.classList.remove("oculto");
+  } else {
+    btnVitoria.classList.add("oculto");
+  }
+}
+
+window.zerarPlacar = function() {
+  placar.pontosA = 0;
+  placar.pontosB = 0;
+  placar.vencedor = null;
+
+  document.getElementById("pontosTimeA").textContent = "0";
+  document.getElementById("pontosTimeB").textContent = "0";
+  document.getElementById("cardTimeA").classList.remove("vencedor");
+  document.getElementById("cardTimeB").classList.remove("vencedor");
+  document.getElementById("btnConfirmarVitoria").classList.add("oculto");
+
+  verificarRegraDeVitoria(0, 0);
+}
+
+window.inverterLados = function() {
+  // Troca posições e pontuações na tela
+  const tempEq = estadoRei.emQuadraA;
+  estadoRei.emQuadraA = estadoRei.emQuadraB;
+  estadoRei.emQuadraB = tempEq;
+
+  const tempPts = placar.pontosA;
+  placar.pontosA = placar.pontosB;
+  placar.pontosB = tempPts;
+
+  document.getElementById("pontosTimeA").textContent = placar.pontosA;
+  document.getElementById("pontosTimeB").textContent = placar.pontosB;
+
+  atualizarInterfaceRei();
+  alterarPontos("A", 0); // Reavalia destaque visual do vencedor
+}
+
+window.confirmarVitoriaRei = function() {
+  if (!placar.vencedor) return;
+
+  const vencedorEhA = placar.vencedor === "A";
+  const timeVencedor = vencedorEhA ? estadoRei.emQuadraA : estadoRei.emQuadraB;
+  const timePerdedor = vencedorEhA ? estadoRei.emQuadraB : estadoRei.emQuadraA;
+
+  // Atualiza contagem de vitórias
+  timeVencedor.vitorias += 1;
+  timePerdedor.vitorias = 0;
+
+  if (estadoRei.fila.length > 0) {
+    // O próximo da fila entra em quadra
+    const proximoTime = estadoRei.fila.shift();
+
+    // Verifica se o próximo é o time da espera e mostra quem deve ser emprestado do perdedor
+    if (proximoTime.isEspera && estadoRei.sugestoesEspera[timePerdedor.nome]) {
+      const emprestados = estadoRei.sugestoesEspera[timePerdedor.nome];
+      alert(
+        `🔄 Rotação Rei da Quadra:\n\n` +
+        `• Fica em quadra: ${timeVencedor.nome} (${timeVencedor.vitorias}ª vitória)\n` +
+        `• Entra em quadra: ${proximoTime.nome}\n` +
+        `• Empréstimo sugerido de quem saiu (${timePerdedor.nome}):\n  👉 ${emprestados}`
+      );
+    }
+
+    // Perdedor vai para o fim da fila
+    estadoRei.fila.push(timePerdedor);
+
+    if (vencedorEhA) {
+      estadoRei.emQuadraB = proximoTime;
+    } else {
+      estadoRei.emQuadraA = proximoTime;
+    }
+  } else {
+    alert(`🏆 ${timeVencedor.nome} venceu! Como não há fila, os mesmos times jogam novamente.`);
+  }
+
+  zerarPlacar();
+  atualizarInterfaceRei();
+}
+
+window.resetarFilaManual = function() {
+  if (!confirm("Resetar placar e zerar contagem de vitórias consecutivas?")) return;
+  estadoRei.emQuadraA.vitorias = 0;
+  estadoRei.emQuadraB.vitorias = 0;
+  estadoRei.fila.forEach(t => t.vitorias = 0);
+  zerarPlacar();
+  atualizarInterfaceRei();
+}
+
+// ==========================================
+// EXECUÇÃO DO SORTEIO PRINCIPAL
+// ==========================================
 window.sortearTimes = function(){
   let selecionados = [];
 
@@ -539,7 +1064,6 @@ window.sortearTimes = function(){
   let resultado = document.getElementById("resultado");
   resultado.innerHTML = "";
 
-  // Montagem do texto formatado para o WhatsApp
   let textoWhats = `🏐 *VÔLEI DO NORTE VILLAGE - TIMES SORTEADOS*\n\n`;
 
   timesFinais.forEach((time, i) => {
@@ -565,6 +1089,9 @@ window.sortearTimes = function(){
     textoWhats += `\n`;
   });
 
+  let mapaSugestoesRei = {};
+  let esperaEmbaralhada = [];
+
   if(espera.length > 0){
     let htmlSugestoes = "";
     let textoWhatsSugestoes = `\n💡 *SUGESTÕES PARA COMPLETAR 6 (QUEM PERDER CEDE):*\n`;
@@ -574,6 +1101,8 @@ window.sortearTimes = function(){
       if(sugestao){
         const nomesSugeridos = sugestao.jogadores.map(j => `<strong>${j.nome}</strong> (${Number(j.nota).toFixed(1)})`).join(", ");
         const nomesWhats = sugestao.jogadores.map(j => `${j.nome} (${Number(j.nota).toFixed(1)})`).join(", ");
+
+        mapaSugestoesRei[`Time ${i+1}`] = nomesWhats;
 
         htmlSugestoes += `
           <div class="sugestao-box">
@@ -587,7 +1116,7 @@ window.sortearTimes = function(){
       }
     });
 
-    let esperaEmbaralhada = embaralhar(espera);
+    esperaEmbaralhada = embaralhar(espera);
 
     resultado.innerHTML += `
       <div class="time-espera">
@@ -612,7 +1141,9 @@ window.sortearTimes = function(){
     textoWhats += textoWhatsSugestoes;
   }
 
-  // Guarda no buffer e exibe o botão do WhatsApp
+  // Sincroniza os times sorteados diretamente na aba do Placar & Rei da Quadra
+  carregarTimesNoReiDaQuadra(timesFinais, esperaEmbaralhada, mapaSugestoesRei);
+
   textoWhatsGlobal = textoWhats.trim();
   btnCopiarWhats.classList.remove("oculto");
 }
